@@ -1,9 +1,14 @@
 package com.red.team.taskvisionapp.repository;
 
-import com.red.team.taskvisionapp.model.entity.User;
+import com.red.team.taskvisionapp.model.entity.UserAccount;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
-import java.util.UUID;
+import java.util.Optional;
 
-public interface UserRepository extends JpaRepository<User, UUID> {
+@Repository
+public interface UserRepository extends JpaRepository<UserAccount, String> {
+
+    Optional<UserAccount> findFirstById(String id);
+    Optional<UserAccount> findFirstByEmail(String email);
 }
