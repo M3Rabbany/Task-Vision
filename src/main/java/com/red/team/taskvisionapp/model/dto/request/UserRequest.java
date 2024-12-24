@@ -1,5 +1,6 @@
 package com.red.team.taskvisionapp.model.dto.request;
 
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,7 +12,9 @@ import lombok.NoArgsConstructor;
 @Builder
 public class UserRequest {
     private String name;
+    @NotBlank(message = "email is required!")
     private String email;
+    @NotBlank(message = "password is required!")
     private String password;
     private String role;
     private String contact;

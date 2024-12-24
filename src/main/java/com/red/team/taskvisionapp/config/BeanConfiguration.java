@@ -30,16 +30,4 @@ public class BeanConfiguration {
     public Validator validator() {
         return Validation.buildDefaultValidatorFactory().getValidator();
     }
-
-//    @Bean
-//    public OpenAPI customOpenAPI() {
-//        return new OpenAPI()
-//                .components(new Components()
-//                        .addSecuritySchemes("bearerAuth",
-//                                new SecurityScheme()
-//                                        .type(SecurityScheme.Type.HTTP)
-//                                        .scheme("bearer")
-//                                        .bearerFormat("JWT")))
-//                .addSecurityItem(new SecurityRequirement().addList("bearerAuth"));
-//    }
 }
