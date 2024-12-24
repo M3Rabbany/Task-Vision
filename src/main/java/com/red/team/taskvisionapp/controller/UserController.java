@@ -1,57 +1,75 @@
 package com.red.team.taskvisionapp.controller;
 
-
-import com.red.team.taskvisionapp.model.entity.User;
-import com.red.team.taskvisionapp.repository.UserRepository;
+import com.red.team.taskvisionapp.model.dto.request.UpdateUserRequest;
+import com.red.team.taskvisionapp.model.dto.request.UserRequest;
+import com.red.team.taskvisionapp.model.dto.response.CommonResponse;
+import com.red.team.taskvisionapp.model.dto.response.UserResponse;
+import com.red.team.taskvisionapp.model.entity.UserAccount;
+import com.red.team.taskvisionapp.service.UserService;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Optional;
-import java.util.UUID;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/users")
+@RequiredArgsConstructor
 public class UserController {
+    private final UserService userService;
 
-    @Autowired
-    private UserRepository userRepository;
-
-    // Update User (PUT)
-    @PutMapping("/{id}")
-    public ResponseEntity<User> updateUser(@PathVariable("id") UUID id, @Valid @RequestBody User userDetails) {
-        Optional<User> userOptional = userRepository.findById(id);
-
-        if (!userOptional.isPresent()) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND); // Jika user tidak ditemukan
-        }
-
-        User user = userOptional.get();
-        user.setName(userDetails.getName());
-        user.setEmail(userDetails.getEmail());
-        user.setPassword(userDetails.getPassword());
-        user.setRole(userDetails.getRole());
-        user.setContact(userDetails.getContact());
-        user.setKpi(userDetails.getKpi());
-        user.setUpdatedAt(userDetails.getUpdatedAt());
-
-        userRepository.save(user); // Simpan user yang sudah diperbarui
-        return new ResponseEntity<>(user, HttpStatus.OK); // Kembalikan status OK dengan data user yang diperbarui
+    @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<UserResponse>> getAllUsers() {
+        return ResponseEntity.ok(userService.getAllUsers());
     }
 
-    // Delete User (DELETE)
+    @GetMapping("/email/{email}")
+    public ResponseEntity<CommonResponse<UserAccount>> getUserByEmail(@PathVariable String email) {
+        UserAccount user = userService.getUserByEmail(email);
+        return ResponseEntity.ok(CommonResponse.<UserAccount>builder()
+                        .message("User found!")
+                        .data(user)
+                        .statusCode(HttpStatus.OK.value())
+                .build());
+    }
+
+    @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<CommonResponse<UserResponse>> createUser(@RequestBody @Valid UserRequest request) {
+        UserResponse user = userService.createUser(request);
+        return ResponseEntity.ok(CommonResponse.<UserResponse>builder()
+                .message("User created successfully!")
+                .data(user)
+                .statusCode(HttpStatus.CREATED.value())
+                .build());
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<CommonResponse<UserResponse>> updateUser(
+            @PathVariable String id,
+            @RequestBody @Valid UpdateUserRequest request) {
+        UserResponse user = userService.updateUser(id, request);
+        return ResponseEntity.ok(CommonResponse.<UserResponse>builder()
+                .message("User updated successfully!")
+                .data(user)
+                .statusCode(HttpStatus.OK.value())
+                .build());
+    }
+
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteUser(@PathVariable("id") UUID id) {
-        Optional<User> userOptional = userRepository.findById(id);
-
-        if (!userOptional.isPresent()) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND); // Jika user tidak ditemukan
-        }
-
-        userRepository.deleteById(id); // Hapus user berdasarkan id
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT); // Kembalikan status NO_CONTENT (tidak ada konten setelah penghapusan)
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<CommonResponse<Void>> deleteUser(@PathVariable String id) {
+        userService.deleteUser(id);
+        return ResponseEntity.ok(CommonResponse.<Void>builder()
+                .message("User deleted successfully!")
+                .statusCode(HttpStatus.OK.value())
+                .build());
     }
 
 }
+
