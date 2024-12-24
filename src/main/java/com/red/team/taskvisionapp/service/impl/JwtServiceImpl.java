@@ -7,7 +7,7 @@ import com.auth0.jwt.exceptions.JWTCreationException;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.red.team.taskvisionapp.model.dto.request.JwtClaims;
-import com.red.team.taskvisionapp.model.entity.UserAccount;
+import com.red.team.taskvisionapp.model.entity.User;
 import com.red.team.taskvisionapp.service.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -25,12 +25,12 @@ public class JwtServiceImpl implements JwtService{
     private static final Logger log = LoggerFactory.getLogger(JwtServiceImpl.class);
 
     @Override
-    public String generateToken(UserAccount userAccount) {
+    public String generateToken(User user) {
         Algorithm algorithm = Algorithm.HMAC256("SECRET");
         try {
             return JWT.create()
-                    .withSubject(userAccount.getId())
-                    .withClaim("role", userAccount.getRole().name())
+                    .withSubject(user.getId())
+                    .withClaim("role", user.getRole().name())
                     .withIssuedAt(Instant.now())
                     .withExpiresAt(Instant.now().plusSeconds(3600))
                     .withIssuer("TASK VISION APP")

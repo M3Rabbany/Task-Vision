@@ -3,6 +3,7 @@ package com.red.team.taskvisionapp.constant;
 public class ApiUrl {
     public static final String BASE_URL = "/api/v1";
     public static final String USER = "/user";
+    public static final String EMAIL = "/{email}";
     public static final String PROJECTS = "/projects";
     public static final String TASKS = "/tasks";
     public static final String FEEDBACK = "/feedback";
