@@ -1,4 +1,0 @@
-package com.red.team.taskvisionapp.model.dto.response;
-
-public class UserResponse {
-}
