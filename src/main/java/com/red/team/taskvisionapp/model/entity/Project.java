@@ -36,7 +36,7 @@ public class Project {
     @JoinTable(
             name = "users_projects",
             joinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"),
-            inverseJoinColumns = @JoinColumn(name = "product_id", referencedColumnName = "id")
+            inverseJoinColumns = @JoinColumn(name = "task_id", referencedColumnName = "id")
     )
     private List<User> users;
 }
