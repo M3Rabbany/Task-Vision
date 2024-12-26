@@ -2,6 +2,7 @@ package com.red.team.taskvisionapp.controller;
 
 import com.red.team.taskvisionapp.constant.ApiUrl;
 import com.red.team.taskvisionapp.model.dto.request.ProjectRequest;
+import com.red.team.taskvisionapp.model.dto.response.CommonResponse;
 import com.red.team.taskvisionapp.model.dto.response.ProjectResponse;
 import com.red.team.taskvisionapp.service.ProjectService;
 import lombok.RequiredArgsConstructor;
@@ -18,26 +19,41 @@ public class ProjectController {
     private final ProjectService projectService;
 
     @GetMapping
-    public ResponseEntity<List<ProjectResponse>> getAllProjects() {
+    public ResponseEntity<CommonResponse<List<ProjectResponse>>> getAllProjects() {
         List<ProjectResponse> projects = projectService.getAllProjects();
-        return ResponseEntity.ok(projects);
+        return ResponseEntity.ok(CommonResponse.<List<ProjectResponse>>builder()
+                .message("Projects retrieved successfully!")
+                .data(projects)
+                .statusCode(HttpStatus.OK.value())
+                .build());
     }
 
     @PostMapping
-    public ResponseEntity<ProjectResponse> createProject(@RequestBody ProjectRequest projectRequest) {
+    public ResponseEntity<CommonResponse<ProjectResponse>> createProject(@RequestBody ProjectRequest projectRequest) {
         ProjectResponse createdProject = projectService.createProject(projectRequest);
-        return ResponseEntity.status(HttpStatus.CREATED).body(createdProject);
+        return ResponseEntity.status(HttpStatus.CREATED).body(CommonResponse.<ProjectResponse>builder()
+                .message("Project created successfully!")
+                .data(createdProject)
+                .statusCode(HttpStatus.CREATED.value())
+                .build());
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ProjectResponse> updateProject(@PathVariable String id, @RequestBody ProjectRequest projectRequest) {
+    public ResponseEntity<CommonResponse<ProjectResponse>> updateProject(@PathVariable String id, @RequestBody ProjectRequest projectRequest) {
         ProjectResponse updatedProject = projectService.updateProject(id, projectRequest);
-        return ResponseEntity.ok(updatedProject);
+        return ResponseEntity.ok(CommonResponse.<ProjectResponse>builder()
+                .message("Project updated successfully!")
+                .data(updatedProject)
+                .statusCode(HttpStatus.OK.value())
+                .build());
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteProject(@PathVariable String id) {
+    public ResponseEntity<CommonResponse<Void>> deleteProject(@PathVariable String id) {
         projectService.deleteProject(id);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(CommonResponse.<Void>builder()
+                .message("Project deleted successfully!")
+                .statusCode(HttpStatus.OK.value())
+                .build());
     }
 }
