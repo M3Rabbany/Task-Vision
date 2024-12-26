@@ -18,6 +18,5 @@ public class ProjectRequest {
     private String description;
     private ProjectStatus status;
     private LocalDateTime deadline;
-    private List<String> userIds;
 }
 
