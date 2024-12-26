@@ -31,6 +31,7 @@ public class JwtServiceImpl implements JwtService{
             return JWT.create()
                     .withSubject(user.getId())
                     .withClaim("role", user.getRole().name())
+                    .withClaim("email", user.getEmail())
                     .withIssuedAt(Instant.now())
                     .withExpiresAt(Instant.now().plusSeconds(3600))
                     .withIssuer("TASK VISION APP")
@@ -58,8 +59,10 @@ public class JwtServiceImpl implements JwtService{
             Algorithm algorithm = Algorithm.HMAC256("SECRET");
             JWTVerifier jwtVerifier = JWT.require(algorithm).withIssuer("TASK VISION APP").build();
             DecodedJWT decodedJWT = jwtVerifier.verify(parseJwt(token));
+
             return JwtClaims.builder()
-                    .email(decodedJWT.getSubject())
+                    .id(decodedJWT.getSubject())
+                    .email(decodedJWT.getClaim("email").asString())
                     .role(decodedJWT.getClaim("role").asString())
                     .build();
         }catch (JWTVerificationException e){
