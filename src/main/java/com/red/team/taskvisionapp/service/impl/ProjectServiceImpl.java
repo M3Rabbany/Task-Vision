@@ -2,12 +2,14 @@ package com.red.team.taskvisionapp.service.impl;
 
 import ch.qos.logback.classic.spi.EventArgUtil;
 import com.red.team.taskvisionapp.constant.ProjectStatus;
+import com.red.team.taskvisionapp.constant.UserRole;
 import com.red.team.taskvisionapp.model.dto.request.ProjectAssignRequest;
 import com.red.team.taskvisionapp.model.dto.request.ProjectRequest;
 import com.red.team.taskvisionapp.model.dto.request.UpdateProjectStatusRequest;
 import com.red.team.taskvisionapp.model.dto.response.ProjectResponse;
 import com.red.team.taskvisionapp.model.dto.response.UserResponse;
 import com.red.team.taskvisionapp.model.entity.Project;
+import com.red.team.taskvisionapp.model.entity.User;
 import com.red.team.taskvisionapp.repository.ProjectRepository;
 import com.red.team.taskvisionapp.repository.UserRepository;
 import com.red.team.taskvisionapp.service.ProjectService;
@@ -42,7 +44,6 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     public ProjectResponse createProject(ProjectRequest projectRequest) {
         Project project = mapToEntity(projectRequest);
-        project.setUsers(userRepository.findAllById(projectRequest.getUserIds()));
         project = projectRepository.save(project);
         return mapToResponse(project);
     }
@@ -55,7 +56,6 @@ public class ProjectServiceImpl implements ProjectService {
         project.setDescription(projectRequest.getDescription());
         project.setStatus(projectRequest.getStatus());
         project.setDeadline(projectRequest.getDeadline());
-        project.setUsers(userRepository.findAllById(projectRequest.getUserIds()));
         project = projectRepository.save(project);
         return mapToResponse(project);
     }
@@ -73,7 +73,16 @@ public class ProjectServiceImpl implements ProjectService {
         validationService.validate(request);
         Project project = projectRepository.findById(request.getProjectId())
                 .orElseThrow(() -> new RuntimeException("Project not found"));
-        project.setUsers(userRepository.findAllById(request.getUserId()));
+        List<User> users = userRepository.findAllById(request.getUserId());
+        users.forEach(user -> {
+            if(project.getUsers().contains(user)){
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "User already assigned to project");
+            }
+            if(user.getRole() == UserRole.ADMIN){
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Admin cannot be assigned to project");
+            }
+        });
+        project.setUsers(users);
         projectRepository.save(project);
     }
 
@@ -110,6 +119,11 @@ public class ProjectServiceImpl implements ProjectService {
             userResponse.setId(user.getId());
             userResponse.setName(user.getName());
             userResponse.setEmail(user.getEmail());
+            userResponse.setRole(user.getRole().name());
+            userResponse.setContact(user.getContact());
+            userResponse.setKpi(user.getKpi());
+            userResponse.setCreatedAt(user.getCreatedAt());
+            userResponse.setUpdatedAt(user.getUpdatedAt());
             return userResponse;
         }).collect(Collectors.toList()));
         return response;
