@@ -1,7 +1,10 @@
 package com.red.team.taskvisionapp.controller;
 
 import com.red.team.taskvisionapp.constant.ApiUrl;
+import com.red.team.taskvisionapp.model.dto.request.ProjectAssignRequest;
 import com.red.team.taskvisionapp.model.dto.request.ProjectRequest;
+import com.red.team.taskvisionapp.model.dto.request.UpdateProjectStatusRequest;
+import com.red.team.taskvisionapp.model.dto.response.CommonResponse;
 import com.red.team.taskvisionapp.model.dto.response.ProjectResponse;
 import com.red.team.taskvisionapp.service.ProjectService;
 import lombok.RequiredArgsConstructor;
@@ -39,5 +42,48 @@ public class ProjectController {
     public ResponseEntity<Void> deleteProject(@PathVariable String id) {
         projectService.deleteProject(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/assign")
+    public ResponseEntity<CommonResponse<String>> assignUserToProject(@RequestBody ProjectAssignRequest request) {
+        projectService.assignUserToProject(request);
+        return ResponseEntity
+                .ok(CommonResponse
+                        .<String>builder()
+                        .statusCode(HttpStatus.OK.value())
+                        .message("User assigned to project successfully!")
+                        .build());
+    }
+
+    @PutMapping("{id}/status")
+    public ResponseEntity<CommonResponse<ProjectResponse>> updateStatusProject(
+                @PathVariable String id,
+                @RequestBody UpdateProjectStatusRequest request
+    ) {
+       request.setProjectId(id);
+        ProjectResponse projectResponse = projectService.updateStatus(request);
+
+        return ResponseEntity
+                .ok(CommonResponse
+                        .<ProjectResponse>builder()
+                        .statusCode(HttpStatus.OK.value())
+                        .message("Project status updated successfully!")
+                        .data(projectResponse)
+                        .build());
+    }
+
+    @GetMapping("/users/{userId}")
+    public ResponseEntity<CommonResponse<List<ProjectResponse>>> getProjectById(
+            @PathVariable String userId
+    ) {
+        List<ProjectResponse> projects = projectService.getAllProjectsByUserId(userId);
+
+        return ResponseEntity
+                .ok(CommonResponse
+                        .<List<ProjectResponse>>builder()
+                        .statusCode(HttpStatus.OK.value())
+                        .message("Projects found!")
+                        .data(projects)
+                        .build());
     }
 }
