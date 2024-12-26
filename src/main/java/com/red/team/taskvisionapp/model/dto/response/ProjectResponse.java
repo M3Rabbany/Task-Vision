@@ -24,3 +24,4 @@ public class ProjectResponse {
     private LocalDateTime updatedAt;
     private List<UserResponse> users;
 }
+
