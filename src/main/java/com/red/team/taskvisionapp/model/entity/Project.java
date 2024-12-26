@@ -8,6 +8,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Entity
 @Table(name = "projects")
@@ -39,4 +40,7 @@ public class Project {
             inverseJoinColumns = @JoinColumn(name = "task_id", referencedColumnName = "id")
     )
     private List<User> users;
+
+    public Project(UUID projectId) {
+    }
 }
