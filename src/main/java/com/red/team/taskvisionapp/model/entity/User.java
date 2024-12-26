@@ -11,6 +11,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 
 @Table(name = "users")
 @AllArgsConstructor
@@ -49,6 +50,9 @@ public class User implements UserDetails {
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss", timezone = "UTC")
     private LocalDateTime updatedAt;
+
+    public User(UUID assignedTo) {
+    }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
