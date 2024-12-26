@@ -1,5 +1,6 @@
 package com.red.team.taskvisionapp.model.dto.request;
 
+import com.red.team.taskvisionapp.constant.UserRole;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
