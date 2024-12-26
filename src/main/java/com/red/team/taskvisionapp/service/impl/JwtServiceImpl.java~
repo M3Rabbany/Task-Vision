@@ -60,7 +60,7 @@ public class JwtServiceImpl implements JwtService{
             DecodedJWT decodedJWT = jwtVerifier.verify(parseJwt(token));
             return JwtClaims.builder()
                     .email(decodedJWT.getSubject())
-                    .role(decodedJWT.getSubject())
+                    .role(decodedJWT.getClaim("role").asString())
                     .build();
         }catch (JWTVerificationException e){
             log.error("JWT Verification failed: {}", e.getMessage());

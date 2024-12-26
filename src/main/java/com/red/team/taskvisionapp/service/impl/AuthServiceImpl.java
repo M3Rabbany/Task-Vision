@@ -2,7 +2,7 @@ package com.red.team.taskvisionapp.service.impl;
 
 import com.red.team.taskvisionapp.model.dto.request.AuthRequest;
 import com.red.team.taskvisionapp.model.dto.response.LoginResponse;
-import com.red.team.taskvisionapp.model.entity.UserAccount;
+import com.red.team.taskvisionapp.model.entity.User;
 import com.red.team.taskvisionapp.service.AuthService;
 import com.red.team.taskvisionapp.service.JwtService;
 import jakarta.validation.ValidationException;
@@ -28,10 +28,9 @@ public class AuthServiceImpl implements AuthService {
                             request.getEmail(),
                             request.getPassword()
                     )
-
             );
             SecurityContextHolder.getContext().setAuthentication(authentication);
-            UserAccount user = (UserAccount) authentication.getPrincipal();
+            User user = (User) authentication.getPrincipal();
             String token = jwtService.generateToken(user);
             return LoginResponse.builder()
                     .email(user.getEmail())

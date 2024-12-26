@@ -29,6 +29,9 @@ public class AuthenticationFilter extends OncePerRequestFilter {
     ) throws ServletException, IOException {
         String bearerToken = request.getHeader("Authorization");
         if (bearerToken != null && jwtService.verifyJwtToken(bearerToken)) {
+            JwtClaims jwtClaims = jwtService.getJwtClaims(bearerToken);
+            String email = jwtClaims.getEmail();
+            UserAccount userAccount = userService.getUserByEmail(email);
             UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                     userAccount.getEmail(),
                     null,
