@@ -62,7 +62,7 @@ public class ProjectController {
     @PostMapping("/assign")
     public ResponseEntity<CommonResponse<String>> assignProjectToUser(
             @RequestBody ProjectAssignRequest request
-            ) {
+    ) {
         projectService.assignUserToProject(request);
         return ResponseEntity.ok(CommonResponse.<String>builder()
                 .message("User assigned to project successfully!")
@@ -74,7 +74,7 @@ public class ProjectController {
     public ResponseEntity<CommonResponse<ProjectResponse>> updateStatusProject(
             @PathVariable String projectId,
             @RequestBody UpdateProjectStatusRequest request
-            ) {
+    ) {
         request.setProjectId(projectId);
         ProjectResponse projectResponse = projectService.updateStatus(request);
         return ResponseEntity.ok(CommonResponse.<ProjectResponse>builder()
@@ -90,6 +90,16 @@ public class ProjectController {
         return ResponseEntity.ok(CommonResponse.<List<ProjectResponse>>builder()
                 .message("Projects retrieved successfully!")
                 .data(projects)
+                .statusCode(HttpStatus.OK.value())
+                .build());
+    }
+
+    @GetMapping("/dashboard/status")
+    public ResponseEntity<CommonResponse<List<ProjectResponse>>> getAllProjectStatuses() {
+        List<ProjectResponse> projectStatuses = projectService.getAllProjectStatuses();
+        return ResponseEntity.ok(CommonResponse.<List<ProjectResponse>>builder()
+                .message("Project statuses retrieved successfully!")
+                .data(projectStatuses)
                 .statusCode(HttpStatus.OK.value())
                 .build());
     }
