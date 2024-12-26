@@ -41,6 +41,9 @@ public class User implements UserDetails {
 
     private Float kpi;
 
+    @ManyToMany(mappedBy = "users")
+    private List<Project> projects;
+
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss", timezone = "UTC")
     private LocalDateTime createdAt;
 
