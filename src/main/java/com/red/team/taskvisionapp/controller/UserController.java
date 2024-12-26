@@ -23,8 +23,8 @@ public class UserController {
     private final UserService userService;
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<UserResponse>> getAllUsers() {
+        System.out.println("getAllUsers");
         return ResponseEntity.ok(userService.getAllUsers());
     }
 
@@ -39,7 +39,6 @@ public class UserController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<CommonResponse<UserResponse>> createUser(@RequestBody @Valid UserRequest request) {
         UserResponse user = userService.createUser(request);
         return ResponseEntity.ok(CommonResponse.<UserResponse>builder()
@@ -50,7 +49,6 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<CommonResponse<UserResponse>> updateUser(
             @PathVariable String id,
             @RequestBody @Valid UpdateUserRequest request) {
@@ -63,7 +61,6 @@ public class UserController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<CommonResponse<Void>> deleteUser(@PathVariable String id) {
         userService.deleteUser(id);
         return ResponseEntity.ok(CommonResponse.<Void>builder()

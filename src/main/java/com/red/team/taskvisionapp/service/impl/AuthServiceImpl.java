@@ -22,7 +22,6 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public LoginResponse login(AuthRequest request) {
-        System.out.println("Mulai Login");
         try {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
@@ -31,13 +30,9 @@ public class AuthServiceImpl implements AuthService {
                     )
 
             );
-            System.out.println("Context Authentication");
             User user = (User) authentication.getPrincipal();
-            System.out.println("principal");
             String token = jwtService.generateToken(user);
-            System.out.println("Autheticated");
             SecurityContextHolder.getContext().setAuthentication(authentication);
-            System.out.println("decode jwt");
             return LoginResponse.builder()
                     .email(user.getEmail())
                     .role(user.getRole().name())
