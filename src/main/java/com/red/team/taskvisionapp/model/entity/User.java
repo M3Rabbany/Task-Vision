@@ -3,10 +3,7 @@ package com.red.team.taskvisionapp.model.entity;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.red.team.taskvisionapp.constant.UserRole;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -20,7 +17,8 @@ import java.util.List;
 @NoArgsConstructor
 @Builder
 @Entity
-@Data
+@Getter
+@Setter
 public class User implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
