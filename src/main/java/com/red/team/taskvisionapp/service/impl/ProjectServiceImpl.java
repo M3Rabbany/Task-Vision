@@ -114,4 +114,14 @@ public class ProjectServiceImpl implements ProjectService {
         }).collect(Collectors.toList()));
         return response;
     }
+
+    @Override
+    public List<ProjectResponse> getAllProjectStatuses() {
+        List<Project> projects = projectRepository.findAll();
+        return projects.stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+
 }
