@@ -21,69 +21,76 @@ public class ProjectController {
     private final ProjectService projectService;
 
     @GetMapping
-    public ResponseEntity<List<ProjectResponse>> getAllProjects() {
+    public ResponseEntity<CommonResponse<List<ProjectResponse>>> getAllProjects() {
         List<ProjectResponse> projects = projectService.getAllProjects();
-        return ResponseEntity.ok(projects);
+        return ResponseEntity.ok(CommonResponse.<List<ProjectResponse>>builder()
+                .message("Projects retrieved successfully!")
+                .data(projects)
+                .statusCode(HttpStatus.OK.value())
+                .build());
     }
 
     @PostMapping
-    public ResponseEntity<ProjectResponse> createProject(@RequestBody ProjectRequest projectRequest) {
+    public ResponseEntity<CommonResponse<ProjectResponse>> createProject(@RequestBody ProjectRequest projectRequest) {
         ProjectResponse createdProject = projectService.createProject(projectRequest);
-        return ResponseEntity.status(HttpStatus.CREATED).body(createdProject);
+        return ResponseEntity.status(HttpStatus.CREATED).body(CommonResponse.<ProjectResponse>builder()
+                .message("Project created successfully!")
+                .data(createdProject)
+                .statusCode(HttpStatus.CREATED.value())
+                .build());
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ProjectResponse> updateProject(@PathVariable String id, @RequestBody ProjectRequest projectRequest) {
+    public ResponseEntity<CommonResponse<ProjectResponse>> updateProject(@PathVariable String id, @RequestBody ProjectRequest projectRequest) {
         ProjectResponse updatedProject = projectService.updateProject(id, projectRequest);
-        return ResponseEntity.ok(updatedProject);
+        return ResponseEntity.ok(CommonResponse.<ProjectResponse>builder()
+                .message("Project updated successfully!")
+                .data(updatedProject)
+                .statusCode(HttpStatus.OK.value())
+                .build());
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteProject(@PathVariable String id) {
+    public ResponseEntity<CommonResponse<Void>> deleteProject(@PathVariable String id) {
         projectService.deleteProject(id);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(CommonResponse.<Void>builder()
+                .message("Project deleted successfully!")
+                .statusCode(HttpStatus.OK.value())
+                .build());
     }
 
     @PostMapping("/assign")
-    public ResponseEntity<CommonResponse<String>> assignUserToProject(@RequestBody ProjectAssignRequest request) {
+    public ResponseEntity<CommonResponse<String>> assignProjectToUser(
+            @RequestBody ProjectAssignRequest request
+            ) {
         projectService.assignUserToProject(request);
-        return ResponseEntity
-                .ok(CommonResponse
-                        .<String>builder()
-                        .statusCode(HttpStatus.OK.value())
-                        .message("User assigned to project successfully!")
-                        .build());
+        return ResponseEntity.ok(CommonResponse.<String>builder()
+                .message("User assigned to project successfully!")
+                .statusCode(HttpStatus.OK.value())
+                .build());
     }
 
-    @PutMapping("{id}/status")
+    @PutMapping("{projectId}/status")
     public ResponseEntity<CommonResponse<ProjectResponse>> updateStatusProject(
-                @PathVariable String id,
-                @RequestBody UpdateProjectStatusRequest request
-    ) {
-       request.setProjectId(id);
+            @PathVariable String projectId,
+            @RequestBody UpdateProjectStatusRequest request
+            ) {
+        request.setProjectId(projectId);
         ProjectResponse projectResponse = projectService.updateStatus(request);
-
-        return ResponseEntity
-                .ok(CommonResponse
-                        .<ProjectResponse>builder()
-                        .statusCode(HttpStatus.OK.value())
-                        .message("Project status updated successfully!")
-                        .data(projectResponse)
-                        .build());
+        return ResponseEntity.ok(CommonResponse.<ProjectResponse>builder()
+                .message("Project status updated successfully!")
+                .data(projectResponse)
+                .statusCode(HttpStatus.OK.value())
+                .build());
     }
 
     @GetMapping("/users/{userId}")
-    public ResponseEntity<CommonResponse<List<ProjectResponse>>> getProjectById(
-            @PathVariable String userId
-    ) {
+    public ResponseEntity<CommonResponse<List<ProjectResponse>>> getProjectByUserId(@PathVariable String userId) {
         List<ProjectResponse> projects = projectService.getAllProjectsByUserId(userId);
-
-        return ResponseEntity
-                .ok(CommonResponse
-                        .<List<ProjectResponse>>builder()
-                        .statusCode(HttpStatus.OK.value())
-                        .message("Projects found!")
-                        .data(projects)
-                        .build());
+        return ResponseEntity.ok(CommonResponse.<List<ProjectResponse>>builder()
+                .message("Projects retrieved successfully!")
+                .data(projects)
+                .statusCode(HttpStatus.OK.value())
+                .build());
     }
 }
