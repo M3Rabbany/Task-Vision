@@ -8,9 +8,9 @@ import java.util.UUID;
 
 public interface TaskService {
     TaskResponse createTask(TaskRequest taskRequest);
-    TaskResponse updateTask(UUID taskId, TaskRequest taskRequest);
-    void deleteTask(UUID taskId);
-    List<TaskResponse> getTasksByProject(UUID projectId);
-    List<TaskResponse> getTasksByAssignedUser(UUID assignedToId);
+    TaskResponse updateTask(String taskId, TaskRequest taskRequest);
+    void deleteTask(String taskId);
+    List<TaskResponse> getTasksByProject(String projectId);
+    List<TaskResponse> getTasksByAssignedUser(String assignedToId);
     List<TaskResponse> getTasksByStatus(String status);
 }
