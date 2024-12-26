@@ -3,6 +3,7 @@ package com.red.team.taskvisionapp.controller;
 import com.red.team.taskvisionapp.model.dto.request.TaskRequest;
 import com.red.team.taskvisionapp.model.dto.response.TaskResponse;
 import com.red.team.taskvisionapp.service.TaskService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -12,24 +13,21 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/projects/{projectId}/tasks")
+@RequiredArgsConstructor
 public class TaskController {
 
     private final TaskService taskService;
 
-    public TaskController(TaskService taskService) {
-        this.taskService = taskService;
-    }
-
     // GET /api/v1/projects/{projectId}/tasks
     @GetMapping
-    public ResponseEntity<List<TaskResponse>> getTasksByProject(@PathVariable UUID projectId) {
+    public ResponseEntity<List<TaskResponse>> getTasksByProject(@PathVariable String projectId) {
         List<TaskResponse> tasks = taskService.getTasksByProject(projectId);
         return new ResponseEntity<>(tasks, HttpStatus.OK);
     }
 
     // POST /api/v1/projects/{projectId}/tasks
     @PostMapping
-    public ResponseEntity<TaskResponse> createTask(@PathVariable UUID projectId, @RequestBody TaskRequest taskRequest) {
+    public ResponseEntity<TaskResponse> createTask(@PathVariable String projectId, @RequestBody TaskRequest taskRequest) {
         taskRequest.setProjectId(projectId);  // Ensure the projectId is set in the taskRequest
         TaskResponse taskResponse = taskService.createTask(taskRequest);
         return new ResponseEntity<>(taskResponse, HttpStatus.CREATED);
@@ -38,8 +36,8 @@ public class TaskController {
     // PUT /api/v1/projects/{projectId}/tasks/{taskId}
     @PutMapping("/{taskId}")
     public ResponseEntity<TaskResponse> updateTask(
-            @PathVariable UUID projectId,
-            @PathVariable UUID taskId,
+            @PathVariable String projectId,
+            @PathVariable String taskId,
             @RequestBody TaskRequest taskRequest) {
         taskRequest.setProjectId(projectId);  // Ensure the projectId is set in the taskRequest
         TaskResponse taskResponse = taskService.updateTask(taskId, taskRequest);
@@ -48,7 +46,7 @@ public class TaskController {
 
     // DELETE /api/v1/projects/{projectId}/tasks/{taskId}
     @DeleteMapping("/{taskId}")
-    public ResponseEntity<Void> deleteTask(@PathVariable UUID projectId, @PathVariable UUID taskId) {
+    public ResponseEntity<Void> deleteTask(@PathVariable String projectId, @PathVariable String taskId) {
         taskService.deleteTask(taskId);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }

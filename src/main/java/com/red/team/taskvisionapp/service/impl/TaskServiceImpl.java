@@ -5,10 +5,15 @@ import com.red.team.taskvisionapp.model.dto.response.TaskResponse;
 import com.red.team.taskvisionapp.model.entity.Project;
 import com.red.team.taskvisionapp.model.entity.Task;
 import com.red.team.taskvisionapp.model.entity.User;
+import com.red.team.taskvisionapp.repository.ProjectRepository;
 import com.red.team.taskvisionapp.repository.TaskRepository;
+import com.red.team.taskvisionapp.repository.UserRepository;
 import com.red.team.taskvisionapp.service.TaskService;
+import lombok.RequiredArgsConstructor;
 import org.springdoc.api.OpenApiResourceNotFoundException;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -16,16 +21,14 @@ import java.util.List;
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class TaskServiceImpl implements TaskService {
-
     private final TaskRepository taskRepository;
-
-    public TaskServiceImpl(TaskRepository taskRepository) {
-        this.taskRepository = taskRepository;
-    }
+    private final UserRepository userRepository;
+    private final ProjectRepository projectRepository;
 
     @Override
-    public List<TaskResponse> getTasksByProject(UUID projectId) {
+    public List<TaskResponse> getTasksByProject(String projectId) {
         List<Task> tasks = taskRepository.findByProjectId(projectId);
         List<TaskResponse> taskResponses = new ArrayList<>();
         for (Task task : tasks) {
@@ -45,7 +48,7 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
-    public List<TaskResponse> getTasksByAssignedUser(UUID assignedToId) {
+    public List<TaskResponse> getTasksByAssignedUser(String assignedToId) {
         return List.of();
     }
 
@@ -56,9 +59,13 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     public TaskResponse createTask(TaskRequest taskRequest) {
+        Project project = projectRepository.findById(taskRequest.getProjectId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ("Project not found")));
+        User user = userRepository.findById(taskRequest.getAssignedTo())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ("User not found")));
         Task task = new Task();
-        task.setProject(new Project(taskRequest.getProjectId()));
-        task.setAssignedTo(new User(taskRequest.getAssignedTo()));
+        task.setProject(project);
+        task.setAssignedTo(user);
         task.setTaskName(taskRequest.getTaskName());
         task.setDeadline(taskRequest.getDeadline());
         task.setStatus(taskRequest.getStatus());
@@ -82,11 +89,14 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
-    public TaskResponse updateTask(UUID taskId, TaskRequest taskRequest) {
+    public TaskResponse updateTask(String taskId, TaskRequest taskRequest) {
         Task task = taskRepository.findById(taskId).orElseThrow(() -> new OpenApiResourceNotFoundException("Task not found"));
-
-        task.setProject(new Project(taskRequest.getProjectId()));
-        task.setAssignedTo(new User(taskRequest.getAssignedTo()));
+        Project project = projectRepository.findById(taskRequest.getProjectId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ("Project not found")));
+        User user = userRepository.findById(taskRequest.getAssignedTo())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ("User not found")));
+        task.setProject(project);
+        task.setAssignedTo(user);
         task.setTaskName(taskRequest.getTaskName());
         task.setDeadline(taskRequest.getDeadline());
         task.setStatus(taskRequest.getStatus());
@@ -109,7 +119,7 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
-    public void deleteTask(UUID taskId) {
+    public void deleteTask(String taskId) {
         Task task = taskRepository.findById(taskId).orElseThrow(() -> new OpenApiResourceNotFoundException("Task not found"));
         taskRepository.delete(task);
     }

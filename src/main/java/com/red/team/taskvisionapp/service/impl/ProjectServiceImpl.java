@@ -1,14 +1,21 @@
 package com.red.team.taskvisionapp.service.impl;
 
+import ch.qos.logback.classic.spi.EventArgUtil;
+import com.red.team.taskvisionapp.constant.ProjectStatus;
+import com.red.team.taskvisionapp.model.dto.request.ProjectAssignRequest;
 import com.red.team.taskvisionapp.model.dto.request.ProjectRequest;
+import com.red.team.taskvisionapp.model.dto.request.UpdateProjectStatusRequest;
 import com.red.team.taskvisionapp.model.dto.response.ProjectResponse;
 import com.red.team.taskvisionapp.model.dto.response.UserResponse;
 import com.red.team.taskvisionapp.model.entity.Project;
 import com.red.team.taskvisionapp.repository.ProjectRepository;
 import com.red.team.taskvisionapp.repository.UserRepository;
 import com.red.team.taskvisionapp.service.ProjectService;
+import com.red.team.taskvisionapp.service.ValidationService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -18,10 +25,17 @@ import java.util.stream.Collectors;
 public class ProjectServiceImpl implements ProjectService {
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
+    private final ValidationService validationService;
 
     @Override
     public List<ProjectResponse> getAllProjects() {
         List<Project> projects = projectRepository.findAll();
+        return projects.stream().map(this::mapToResponse).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<ProjectResponse> getAllProjectsByUserId(String userId) {
+        List<Project> projects = projectRepository.findAllByUsers_Id(userId);
         return projects.stream().map(this::mapToResponse).collect(Collectors.toList());
     }
 
@@ -52,6 +66,24 @@ public class ProjectServiceImpl implements ProjectService {
             throw new RuntimeException("Project not found");
         }
         projectRepository.deleteById(id);
+    }
+
+    @Override
+    public void assignUserToProject(ProjectAssignRequest request) {
+        validationService.validate(request);
+        Project project = projectRepository.findById(request.getProjectId())
+                .orElseThrow(() -> new RuntimeException("Project not found"));
+        project.setUsers(userRepository.findAllById(request.getUserId()));
+        projectRepository.save(project);
+    }
+
+    @Override
+    public ProjectResponse updateStatus(UpdateProjectStatusRequest request) {
+        Project project = projectRepository.findById(request.getProjectId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found"));
+        project.setStatus(request.getProjectStatus());
+        projectRepository.save(project);
+        return mapToResponse(project);
     }
 
 
