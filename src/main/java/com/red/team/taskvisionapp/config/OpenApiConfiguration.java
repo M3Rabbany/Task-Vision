@@ -9,8 +9,9 @@ import org.springframework.context.annotation.Bean;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.info.Contact;
 import io.swagger.v3.oas.annotations.info.Info;
+import org.springframework.context.annotation.Configuration;
 
-
+@Configuration
 @OpenAPIDefinition(
         info = @Info(
                 title = "Task Vision App",
@@ -26,11 +27,16 @@ public class OpenApiConfiguration {
     @Bean
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
-                .addSecurityItem(new SecurityRequirement().addList("bearerAuth"))
+                .addSecurityItem(new SecurityRequirement()
+                        .addList("Bearer Authentication"))
                 .components(new Components()
-                        .addSecuritySchemes("bearerAuth", new SecurityScheme()
-                                .type(SecurityScheme.Type.HTTP)
-                                .scheme("bearer")
-                                .bearerFormat("JWT")));
+                        .addSecuritySchemes(
+                                "Bearer Authentication",
+                                new SecurityScheme()
+                                        .type(SecurityScheme.Type.HTTP)
+                                        .scheme("bearer")
+                                        .bearerFormat("JWT")
+                        )
+                );
     }
 }
