@@ -1,6 +1,7 @@
 package com.red.team.taskvisionapp.model.dto.response;
 
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.red.team.taskvisionapp.constant.ProjectStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -22,6 +23,7 @@ public class ProjectResponse {
     private LocalDateTime deadline;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    @JsonProperty("assigned_to")
     private List<UserResponse> users;
 }
 
