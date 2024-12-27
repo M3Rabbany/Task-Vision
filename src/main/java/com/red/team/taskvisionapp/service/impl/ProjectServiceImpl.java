@@ -1,4 +1,5 @@
 package com.red.team.taskvisionapp.service.impl;
+import com.red.team.taskvisionapp.constant.ProjectStatus;
 import com.red.team.taskvisionapp.constant.UserRole;
 import com.red.team.taskvisionapp.model.dto.request.ProjectAssignRequest;
 import com.red.team.taskvisionapp.model.dto.request.ProjectRequest;
@@ -15,6 +16,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -96,6 +99,7 @@ public class ProjectServiceImpl implements ProjectService {
         Project project = new Project();
         project.setProjectName(projectRequest.getProjectName());
         project.setDescription(projectRequest.getDescription());
+        project.setStatus(ProjectStatus.IN_PROGRESS);
         project.setDeadline(projectRequest.getDeadline());
         return project;
     }
@@ -105,21 +109,10 @@ public class ProjectServiceImpl implements ProjectService {
         response.setId(project.getId());
         response.setProjectName(project.getProjectName());
         response.setDescription(project.getDescription());
+        response.setStatus(project.getStatus());
         response.setDeadline(project.getDeadline());
-        response.setCreatedAt(project.getCreatedAt());
-        response.setUpdatedAt(project.getUpdatedAt());
-        response.setUsers(project.getUsers().stream().map(user -> {
-            UserResponse userResponse = new UserResponse();
-            userResponse.setId(user.getId());
-            userResponse.setName(user.getName());
-            userResponse.setEmail(user.getEmail());
-            userResponse.setRole(user.getRole().name());
-            userResponse.setContact(user.getContact());
-            userResponse.setKpi(user.getKpi());
-            userResponse.setCreatedAt(user.getCreatedAt());
-            userResponse.setUpdatedAt(user.getUpdatedAt());
-            return userResponse;
-        }).collect(Collectors.toList()));
+        response.setCreatedAt(LocalDateTime.now());
+        response.setUpdatedAt(LocalDateTime.now());
         return response;
     }
 
