@@ -1,7 +1,7 @@
 package com.red.team.taskvisionapp.security;
 
 import com.red.team.taskvisionapp.model.dto.request.JwtClaims;
-import com.red.team.taskvisionapp.model.entity.User;
+import com.red.team.taskvisionapp.model.entity.UserAccount;
 import com.red.team.taskvisionapp.service.JwtService;
 import com.red.team.taskvisionapp.service.UserService;
 import jakarta.servlet.FilterChain;
@@ -31,11 +31,11 @@ public class AuthenticationFilter extends OncePerRequestFilter {
         if (bearerToken != null && jwtService.verifyJwtToken(bearerToken)) {
             JwtClaims jwtClaims = jwtService.getJwtClaims(bearerToken);
             String email = jwtClaims.getEmail();
-            User user = userService.getUserByEmail(email);
+            UserAccount userAccount = userService.getUserByEmail(email);
             UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                    user.getEmail(),
+                    userAccount.getEmail(),
                     null,
-                    user.getAuthorities()
+                    userAccount.getAuthorities()
             );
             SecurityContextHolder.getContext().setAuthentication(authentication);
         }

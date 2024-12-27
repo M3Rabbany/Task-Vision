@@ -16,7 +16,6 @@ import java.util.List;
 public class ProjectRequest {
     private String projectName;
     private String description;
-    private ProjectStatus status;
     private LocalDateTime deadline;
 }
 

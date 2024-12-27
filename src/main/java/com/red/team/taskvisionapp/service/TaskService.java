@@ -1,5 +1,8 @@
 package com.red.team.taskvisionapp.service;
 
+import com.red.team.taskvisionapp.model.dto.request.TaskApproveRequest;
+import com.red.team.taskvisionapp.model.dto.request.TaskAssignRequest;
+import com.red.team.taskvisionapp.model.dto.request.TaskFeedbackRequest;
 import com.red.team.taskvisionapp.model.dto.request.TaskRequest;
 import com.red.team.taskvisionapp.model.dto.response.TaskResponse;
 
@@ -13,4 +16,7 @@ public interface TaskService {
     List<TaskResponse> getTasksByProject(String projectId);
     List<TaskResponse> getTasksByAssignedUser(String assignedToId);
     List<TaskResponse> getTasksByStatus(String status);
+    void assignTaskToMember(TaskAssignRequest request);
+    void approveTask(TaskApproveRequest request);
+    void feedbackTask(TaskFeedbackRequest request);
 }
