@@ -71,7 +71,7 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
-    public TaskResponse getTaskById(String id, String assignedToId) {
+    public TaskResponse getTaskById(String id) {
         validationService.validate(id);
 
         Task task = taskRepository.findById(id)
