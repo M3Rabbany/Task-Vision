@@ -1,0 +1,1 @@
+INSERT INTO users (id, contact, created_at, email, kpi, name, password, role) VALUE (UUID(),'0812345678',LOCALTIMESTAMP,'test@gmail.com','10,0','Test','rahasia','ADMIN')
