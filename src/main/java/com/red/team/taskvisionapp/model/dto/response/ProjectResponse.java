@@ -19,7 +19,6 @@ public class ProjectResponse {
     private String id;
     private String projectName;
     private String description;
-    private ProjectStatus status;
     private LocalDateTime deadline;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
