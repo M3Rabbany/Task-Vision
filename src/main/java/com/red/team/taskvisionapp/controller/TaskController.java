@@ -1,6 +1,8 @@
 package com.red.team.taskvisionapp.controller;
 
-import com.red.team.taskvisionapp.constant.ApiUrl;
+import com.red.team.taskvisionapp.model.dto.request.TaskApproveRequest;
+import com.red.team.taskvisionapp.model.dto.request.TaskAssignRequest;
+import com.red.team.taskvisionapp.model.dto.request.TaskFeedbackRequest;
 import com.red.team.taskvisionapp.model.dto.request.TaskRequest;
 import com.red.team.taskvisionapp.model.dto.response.CommonResponse;
 import com.red.team.taskvisionapp.model.dto.response.TaskResponse;
@@ -67,6 +69,33 @@ public class TaskController {
         taskService.deleteTask(taskId);
         return ResponseEntity.ok(CommonResponse.<Void>builder()
                 .message("Task deleted successfully!")
+                .statusCode(HttpStatus.OK.value())
+                .build());
+    }
+
+    @PostMapping("/{taskId}/assign")
+    public ResponseEntity<CommonResponse<String>> assignTask(TaskAssignRequest request) {
+        taskService.assignTaskToMember(request);
+        return ResponseEntity.ok(CommonResponse.<String>builder()
+                .message("Task assigned successfully!")
+                .statusCode(HttpStatus.OK.value())
+                .build());
+    }
+
+    @PostMapping("/{taskId}/approve")
+    public ResponseEntity<CommonResponse<String>> approveTask(TaskApproveRequest request) {
+        taskService.approveTask(request);
+        return ResponseEntity.ok(CommonResponse.<String>builder()
+                .message("Task approved successfully!")
+                .statusCode(HttpStatus.OK.value())
+                .build());
+    }
+
+    @PostMapping("/{taskId}/feedback")
+    public ResponseEntity<CommonResponse<String>> feedbackTask(TaskFeedbackRequest request) {
+        taskService.feedbackTask(request);
+        return ResponseEntity.ok(CommonResponse.<String>builder()
+                .message("Task rejected successfully!")
                 .statusCode(HttpStatus.OK.value())
                 .build());
     }
