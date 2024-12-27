@@ -10,5 +10,5 @@ public class ApiUrl {
     public static final String DASHBOARD = "/dashboard";
     public static final String NOTIFICATIONS = "/notifications";
     public static final String STATUS = "/status";
-    public static final String REPORTING = "/reporting";
+    public static final String REPORT = "/report";
 }
