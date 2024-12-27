@@ -8,6 +8,7 @@ import com.red.team.taskvisionapp.model.entity.Project;
 import com.red.team.taskvisionapp.model.entity.Report;
 import com.red.team.taskvisionapp.repository.ProjectRepository;
 import com.red.team.taskvisionapp.repository.ReportRepository;
+import com.red.team.taskvisionapp.service.ExcelExportService;
 import com.red.team.taskvisionapp.service.ReportService;
 import com.red.team.taskvisionapp.service.ValidationService;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +17,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
 @Service
@@ -24,9 +27,22 @@ public class ReportServiceImpl implements ReportService {
     private final ValidationService validationService;
     private final ReportRepository reportRepository;
     private final ProjectRepository projectRepository;
+    private final ExcelExportService excelExportService;
+
     @Override
-    public byte[] generateReport(ReportType reportType) {
-        return new byte[0];
+    public byte[] generateReport(ReportType reportType) throws IOException {
+
+
+        List<String> headers = Arrays.asList("Project Name", "Task Name", "Status", "Deadline", "KPI", "Feedback");
+
+        // Data isi
+        List<List<String>> data = Arrays.asList(
+                Arrays.asList("Project A", "Task 1", "Completed", "2024-12-27", "80", "Task completed successfully"),
+                Arrays.asList("Project B", "Task 2", "In Progress", "2024-12-28", "70", "Need additional resources")
+        );
+
+        // Generate file Excel
+        return excelExportService.generateExcelFile(data, headers);
     }
 
     @Override
@@ -51,6 +67,7 @@ public class ReportServiceImpl implements ReportService {
                 .id(report.getId())
                 .projectName(report.getProject().getProjectName())
                 .projectId(report.getProject().getId())
+                .type(report.getType())
                 .createdAt(report.getCreatedAt())
                 .updatedAt(report.getUpdatedAt())
                 .build();

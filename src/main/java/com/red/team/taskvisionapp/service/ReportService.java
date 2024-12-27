@@ -7,11 +7,12 @@ import com.red.team.taskvisionapp.model.dto.request.ReportRequest;
 import com.red.team.taskvisionapp.model.dto.response.ReportResponse;
 import org.springframework.data.domain.Page;
 
+import java.io.IOException;
 import java.util.List;
 
 public interface ReportService {
 
-    byte[] generateReport(ReportType reportType);
+    byte[] generateReport(ReportType reportType) throws IOException;
 
     List<ReportResponse> getAllReports();
 
