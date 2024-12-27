@@ -41,6 +41,13 @@ public class Project {
     )
     private List<User> users;
 
+    @OneToMany(
+            mappedBy = "project",
+            cascade = CascadeType.ALL,
+            fetch = FetchType.EAGER,
+            orphanRemoval = true)
+    private List<Report> reports;
+
     public Project(UUID projectId) {
     }
 }
