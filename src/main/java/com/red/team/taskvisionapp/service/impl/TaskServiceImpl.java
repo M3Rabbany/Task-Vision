@@ -1,9 +1,6 @@
 package com.red.team.taskvisionapp.service.impl;
 
-import com.red.team.taskvisionapp.model.dto.request.TaskApproveRequest;
-import com.red.team.taskvisionapp.model.dto.request.TaskAssignRequest;
-import com.red.team.taskvisionapp.model.dto.request.TaskFeedbackRequest;
-import com.red.team.taskvisionapp.model.dto.request.TaskRequest;
+import com.red.team.taskvisionapp.model.dto.request.*;
 import com.red.team.taskvisionapp.model.dto.response.TaskResponse;
 import com.red.team.taskvisionapp.model.entity.Project;
 import com.red.team.taskvisionapp.model.entity.Task;
@@ -24,6 +21,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -54,14 +52,60 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
-    public List<TaskResponse> getTasksByAssignedUser(String assignedToId) {
-        return List.of();
+    public List<TaskResponse> getAllTasksByUserId(String assignedToId) {
+        validationService.validate(assignedToId);
+
+        List<Task> tasks = taskRepository.findByAssignedToId(assignedToId);
+        return tasks.stream().map(this::toTaskResponse).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<TaskResponse> getPendingTaskById(String assignedToId) {
+        validationService.validate(assignedToId);
+
+        List<Task> pendingTasks = taskRepository.findByAssignedToIdAndStatus(assignedToId, "Pending");
+
+        return pendingTasks.stream()
+                .map(this::toTaskResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public TaskResponse getTaskById(String id, String assignedToId) {
+        validationService.validate(id);
+
+        Task task = taskRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ("Feedback not found")));
+
+        return toTaskResponse(task);
+    }
+
+    @Override
+    public TaskResponse requestApprovalTask(TaskApproveRequest request) {
+        validationService.validate(request);
+
+        Task task = taskRepository.findById(request.getTaskId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ("Task not found")));
+
+        task.setStatus("Pending");
+        task.setUpdatedAt(LocalDateTime.now());
+        taskRepository.save(task);
+
+        return toTaskResponse(task);
     }
 
     @Override
     public List<TaskResponse> getTasksByStatus(String status) {
-        return List.of();
+
+        if (status == null && status.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Status cannot be empty");
+        }
+
+        List<Task> tasks = taskRepository.findByStatus(status);
+
+        return tasks.stream().map(this::toTaskResponse).collect(Collectors.toList());
     }
+
 
     @Override
     public void assignTaskToMember(TaskAssignRequest request) {
@@ -203,5 +247,19 @@ public class TaskServiceImpl implements TaskService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return authentication.getAuthorities().stream()
                 .noneMatch(grantedAuthority -> grantedAuthority.getAuthority().equals("PROJECT_MANAGER"));
+    }
+
+    private TaskResponse toTaskResponse(Task task) {
+        return new TaskResponse(
+                task.getId(),
+                task.getProject().getId(),
+                task.getAssignedTo().getId(),
+                task.getTaskName(),
+                task.getDeadline(),
+                task.getStatus(),
+                task.getFeedback(),
+                task.getCreatedAt(),
+                task.getUpdatedAt()
+        );
     }
 }

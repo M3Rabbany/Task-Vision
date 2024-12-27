@@ -11,5 +11,6 @@ import java.util.UUID;
 public interface TaskRepository extends JpaRepository<Task, String> {
     List<Task> findByProjectId(String projectId);
     List<Task> findByAssignedToId(String assignedToId);
+    List<Task> findByAssignedToIdAndStatus(String assignedToId, String status);
     List<Task> findByStatus(String status);
 }
