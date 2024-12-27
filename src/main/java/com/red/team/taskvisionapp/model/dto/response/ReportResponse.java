@@ -21,7 +21,9 @@ public class ReportResponse {
     @JsonProperty("project_name")
     private String projectName;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss", timezone = "UTC")
+    @JsonProperty("created_at")
     private LocalDateTime createdAt;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss", timezone = "UTC")
+    @JsonProperty("updated_at")
     private LocalDateTime updatedAt;
 }
