@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -18,6 +19,9 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@EntityListeners(
+        AuditingEntityListener.class
+)
 public class Project {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -41,6 +45,13 @@ public class Project {
             inverseJoinColumns = @JoinColumn(name = "project_id", referencedColumnName = "id")
     )
     private List<User> users;
+
+    @OneToMany(
+            mappedBy = "project",
+            cascade = CascadeType.ALL,
+            fetch = FetchType.EAGER,
+            orphanRemoval = true)
+    private List<Report> reports;
 
     public Project(UUID projectId) {
     }
