@@ -1,11 +1,14 @@
 package com.red.team.taskvisionapp.controller;
 
 import com.red.team.taskvisionapp.constant.ApiUrl;
+import com.red.team.taskvisionapp.model.dto.request.TaskApproveRequest;
 import com.red.team.taskvisionapp.model.dto.request.UpdateUserRequest;
 import com.red.team.taskvisionapp.model.dto.request.UserRequest;
 import com.red.team.taskvisionapp.model.dto.response.CommonResponse;
+import com.red.team.taskvisionapp.model.dto.response.TaskResponse;
 import com.red.team.taskvisionapp.model.dto.response.UserResponse;
 import com.red.team.taskvisionapp.model.entity.User;
+import com.red.team.taskvisionapp.service.TaskService;
 import com.red.team.taskvisionapp.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -68,6 +71,46 @@ public class UserController {
                 .statusCode(HttpStatus.OK.value())
                 .build());
     }
+    @GetMapping("/{userId}/tasks")
+    public ResponseEntity<CommonResponse<List<TaskResponse>>> getAllTasksByUserId(@PathVariable String userId) {
+        List<TaskResponse> tasks = userService.getAllTasksByUserId(userId);
+        return ResponseEntity.ok(CommonResponse.<List<TaskResponse>>builder()
+                .message("Tasks retrieved successfully!")
+                .data(tasks)
+                .statusCode(HttpStatus.OK.value())
+                .build());
+    }
+
+    @GetMapping("/{userId}/tasks/pending")
+    public ResponseEntity<CommonResponse<List<TaskResponse>>> getPendingTasksByUserId(@PathVariable String userId) {
+        List<TaskResponse> tasks = userService.getPendingTaskById(userId);
+        return ResponseEntity.ok(CommonResponse.<List<TaskResponse>>builder()
+                .message("Tasks retrieved successfully!")
+                .data(tasks)
+                .statusCode(HttpStatus.OK.value())
+                .build());
+    }
+
+    @GetMapping("/{userId}/tasks/{taskId}/feedback")
+    public ResponseEntity<CommonResponse<String>> getTaskFeedback(@PathVariable String userId, @PathVariable String taskId) {
+        TaskResponse feedback = userService.getFeedbackTaskById(userId, taskId);
+        return ResponseEntity.ok(CommonResponse.<String>builder()
+                .message("Task feedback retrieved successfully!")
+                .data(feedback.getFeedback())
+                .statusCode(HttpStatus.OK.value())
+                .build());
+    }
+
+    @PutMapping("{taskId}/approval")
+    public ResponseEntity<CommonResponse<String>> approveTask(@PathVariable String taskId) {
+        TaskResponse taskResponse = userService.requestApprovalTask(taskId);
+        return ResponseEntity.ok(CommonResponse.<String>builder()
+                .message("Task request approved successfully!")
+                .statusCode(HttpStatus.OK.value())
+                .data(taskResponse.getStatus())
+                .build());
+    }
+
 
 }
 
