@@ -28,7 +28,7 @@ public class Task {
     private User assignedTo;
 
     private String taskName;
-    private Integer deadline;
+    private LocalDateTime deadline;
     private String status;
     private String feedback;
 
