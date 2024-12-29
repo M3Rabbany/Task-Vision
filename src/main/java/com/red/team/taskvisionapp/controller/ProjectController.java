@@ -84,23 +84,5 @@ public class ProjectController {
                 .build());
     }
 
-    @GetMapping("/users/{userId}")
-    public ResponseEntity<CommonResponse<List<ProjectResponse>>> getProjectByUserId(@PathVariable String userId) {
-        List<ProjectResponse> projects = projectService.getAllProjectsByUserId(userId);
-        return ResponseEntity.ok(CommonResponse.<List<ProjectResponse>>builder()
-                .message("Projects retrieved successfully!")
-                .data(projects)
-                .statusCode(HttpStatus.OK.value())
-                .build());
-    }
 
-    @GetMapping("/dashboard/status")
-    public ResponseEntity<CommonResponse<List<ProjectResponse>>> getAllProjectStatuses() {
-        List<ProjectResponse> projectStatuses = projectService.getAllProjectStatuses();
-        return ResponseEntity.ok(CommonResponse.<List<ProjectResponse>>builder()
-                .message("Project statuses retrieved successfully!")
-                .data(projectStatuses)
-                .statusCode(HttpStatus.OK.value())
-                .build());
-    }
 }
