@@ -6,7 +6,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Data
 @AllArgsConstructor
@@ -17,7 +16,7 @@ public class TaskResponse {
     private String projectId;
     private String assignedTo;
     private String taskName;
-    private Integer deadline;
+    private LocalDateTime deadline;
     private String status;
     private String feedback;
     private LocalDateTime createdAt;

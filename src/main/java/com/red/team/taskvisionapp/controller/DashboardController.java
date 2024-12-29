@@ -1,22 +1,23 @@
 package com.red.team.taskvisionapp.controller;
 
+import com.red.team.taskvisionapp.constant.ApiUrl;
 import com.red.team.taskvisionapp.model.dto.response.CommonResponse;
 import com.red.team.taskvisionapp.model.dto.response.DashboardResponse;
+import com.red.team.taskvisionapp.model.dto.response.KpiResponse;
 import com.red.team.taskvisionapp.service.DashboardService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 
 @RestController
-@RequestMapping("/api/v1/dashboard")
+@RequestMapping(ApiUrl.BASE_URL + ApiUrl.DASHBOARD)
+@RequiredArgsConstructor
 public class DashboardController {
 
     @Autowired
@@ -41,6 +42,12 @@ public class DashboardController {
         Page<DashboardResponse> dashboardResponses = dashboardService.getFilteredDashboards(search, start, end, filterBy, pageable);
 
         return new CommonResponse<>("Success", dashboardResponses, 200);
+    }
+
+    @GetMapping("/kpi")
+    public CommonResponse<KpiResponse> getUserKpiMetric(@PathVariable String userId) {
+        KpiResponse kpiMetric = dashboardService.getUserKpiMetrics(userId);
+        return new CommonResponse<>("Success", kpiMetric, 200);
     }
 }
 
