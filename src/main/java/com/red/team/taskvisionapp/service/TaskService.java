@@ -11,9 +11,9 @@ public interface TaskService {
     TaskResponse updateTask(String taskId, TaskRequest taskRequest);
     void deleteTask(String taskId);
     List<TaskResponse> getTasksByProject(String projectId);
-    List<TaskResponse> getAllTasksByUserId(String assignedToId);
-    List<TaskResponse> getPendingTaskById(String assignedToId);
-    TaskResponse getTaskById(String id, String assignedToId);
+    List<TaskResponse> getAllTasksByUserId(String assignedTo);
+    List<TaskResponse> getPendingTaskById(String assignedTo);
+    TaskResponse getTaskById(String id, String assignedTo);
     TaskResponse requestApprovalTask(TaskApproveRequest request);
     List<TaskResponse> getTasksByStatus(String status);
     void assignTaskToMember(TaskAssignRequest request);

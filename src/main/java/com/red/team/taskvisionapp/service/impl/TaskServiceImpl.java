@@ -250,16 +250,16 @@ public class TaskServiceImpl implements TaskService {
     }
 
     private TaskResponse toTaskResponse(Task task) {
-        return new TaskResponse(
-                task.getId(),
-                task.getProject().getId(),
-                task.getAssignedTo().getId(),
-                task.getTaskName(),
-                task.getDeadline(),
-                task.getStatus(),
-                task.getFeedback(),
-                task.getCreatedAt(),
-                task.getUpdatedAt()
-        );
+        return TaskResponse.builder()
+                .id(task.getId())
+                .projectId(task.getProject().getId())
+                .taskName(task.getTaskName())
+                .deadline(task.getDeadline())
+                .status(task.getStatus())
+                .feedback(task.getFeedback())
+                .createdAt(task.getCreatedAt())
+                .updatedAt(task.getUpdatedAt())
+                .build();
+
     }
 }
