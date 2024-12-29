@@ -16,6 +16,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -41,25 +42,23 @@ public class DashboardServiceImpl implements DashboardService {
     }
 
     @Override
-    public KpiResponse getUserKpiMetrics(String userId) {
+    public List<KpiResponse> getUserKpiMetrics() {
         List<User> users = userRepository.findAll();
 
-        return (KpiResponse) users.stream().map(user -> {
-
+        return users.stream().map(user -> {
             List<Task> tasks = taskRepository.findByAssignedToId(user.getId());
 
-            // menghitung task
+            // menghitung metrik tasks
             long totalTasks = tasks.size();
             if (totalTasks == 0) {
                 return KpiResponse.builder()
                         .userId(user.getId())
                         .name(user.getName())
                         .email(user.getEmail())
-                        .kpi(0) // saat tidak ada task
+                        .kpi(0) // kalo gaada task
                         .build();
             }
 
-            // menghitung task tepat waktu/telat
             long onTimeTasks = tasks.stream()
                     .filter(task -> task.getStatus().equalsIgnoreCase("completed") &&
                             task.getUpdatedAt().isBefore(task.getDeadline()))
@@ -70,7 +69,7 @@ public class DashboardServiceImpl implements DashboardService {
                             task.getUpdatedAt().isAfter(task.getDeadline()))
                     .count();
 
-            // Rumus KPI ala2
+            // Custom KPI formula
             float kpi = ((onTimeTasks * 1) + (lateTasks * 0.5f)) / totalTasks;
 
             return KpiResponse.builder()
