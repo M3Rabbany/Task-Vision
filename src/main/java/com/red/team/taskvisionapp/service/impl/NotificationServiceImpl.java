@@ -21,11 +21,6 @@ public class NotificationServiceImpl implements NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final NotificationMemberRepository notificationMemberRepository;
-    @Override
-    public NotificationResponse createNotification(Notification notification) {
-        Notification savedNotification = notificationRepository.save(notification);
-        return mapToResponse(savedNotification);
-    }
 
     @Override
     public List<NotificationResponse> getAllNotificationsForUser(User user) {

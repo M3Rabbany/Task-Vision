@@ -23,17 +23,6 @@ public class NotificationController {
     private final NotificationService notificationService;
     private final UserRepository userRepository;
 
-    @PostMapping
-    public ResponseEntity<CommonResponse<NotificationResponse>> createNotification(
-            @PathVariable String userId,
-            @RequestBody Notification notification) {
-        NotificationResponse response = notificationService.createNotification(notification);
-        return ResponseEntity.status(HttpStatus.CREATED).body(CommonResponse.<NotificationResponse>builder()
-                        .message("Notification created successfully!")
-                        .data(response)
-                        .statusCode(HttpStatus.CREATED.value())
-                        .build());
-    }
 
     @GetMapping("/user/{userId}")
     public ResponseEntity<CommonResponse<List<NotificationResponse>>> getAllNotificationsForUser (@PathVariable String userId) {
