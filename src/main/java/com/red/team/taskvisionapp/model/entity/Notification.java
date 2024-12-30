@@ -35,4 +35,3 @@ public class Notification {
     @OneToMany(mappedBy = "notification", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<NotificationMember> notificationMembers;
 }
-

@@ -21,4 +21,3 @@ public class NotificationResponse {
     private List<NotificationMemberResponse> notificationMembers;
 
 }
-

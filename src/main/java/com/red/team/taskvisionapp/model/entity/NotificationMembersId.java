@@ -1,6 +1,8 @@
 package com.red.team.taskvisionapp.model.entity;
 
+
 import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
@@ -16,7 +18,8 @@ public class NotificationMembersId implements Serializable {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof NotificationMembersId that)) return false;
+        if (!(o instanceof NotificationMembersId)) return false;
+        NotificationMembersId that = (NotificationMembersId) o;
         return Objects.equals(user, that.user) && Objects.equals(notification, that.notification);
     }
 
