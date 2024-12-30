@@ -1,14 +1,19 @@
 package com.red.team.taskvisionapp.service.impl;
 
 import com.red.team.taskvisionapp.constant.UserRole;
+import com.red.team.taskvisionapp.model.dto.request.TaskApproveRequest;
 import com.red.team.taskvisionapp.model.dto.request.UpdateUserRequest;
 import com.red.team.taskvisionapp.model.dto.request.UserRequest;
+import com.red.team.taskvisionapp.model.dto.response.TaskResponse;
 import com.red.team.taskvisionapp.model.dto.response.UserResponse;
+import com.red.team.taskvisionapp.model.entity.Task;
 import com.red.team.taskvisionapp.model.entity.User;
+import com.red.team.taskvisionapp.repository.TaskRepository;
 import com.red.team.taskvisionapp.repository.UserRepository;
 import com.red.team.taskvisionapp.service.UserService;
 import com.red.team.taskvisionapp.service.ValidationService;
 import lombok.RequiredArgsConstructor;
+import org.apache.poi.ss.formula.functions.T;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -28,6 +33,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final ValidationService validationService;
     private final PasswordEncoder passwordEncoder;
+    private final TaskRepository taskRepository;
 
 
     @Override
@@ -84,6 +90,54 @@ public class UserServiceImpl implements UserService {
         userRepository.delete(account);
     }
 
+    @Override
+    public List<TaskResponse> getAllTasksByUserId(String id) {
+        validationService.validate(id);
+
+        List<Task> tasks = taskRepository.findByAssignedToId(id);
+        return tasks.stream().map(this::convertToTaskResponse).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<TaskResponse> getPendingTaskById(String id) {
+        validationService.validate(id);
+
+        List<Task> tasks = taskRepository.findByAssignedToIdAndStatus(id, "Pending"); // Pending
+        return tasks.stream().map(this::convertToTaskResponse).collect(Collectors.toList());
+    }
+
+    @Override
+    public TaskResponse getFeedbackTaskById(String userId, String taskId) {
+        validationService.validate(userId);
+        validationService.validate(taskId);
+
+        User user = userRepository.findFirstById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ("User not found")));
+
+        Task task = taskRepository.findByIdAndAssignedToId(taskId, userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ("Task not found or not assigned to this user")));
+
+        return convertToTaskResponse(task);
+    }
+
+    @Override
+    public TaskResponse requestApprovalTask(String taskId) {
+        validationService.validate(taskId);
+
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ("Task not found")));
+
+        if ("Pending".equals(task.getStatus()) || "Approved".equals(task.getStatus())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Task is already in Pending or Approved status");
+        }
+
+        task.setStatus("Pending");
+        task.setUpdatedAt(LocalDateTime.now());
+        taskRepository.save(task);
+
+        return convertToTaskResponse(task);
+    }
+
     private UserResponse convertToResponse(User user) {
         return UserResponse.builder()
                 .id(user.getId())
@@ -102,5 +156,19 @@ public class UserServiceImpl implements UserService {
         return userRepository.findFirstByEmail(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
+    }
+
+    private TaskResponse convertToTaskResponse(Task task) {
+        return TaskResponse.builder()
+                .id(task.getId())
+                .projectId(task.getProject().getId())
+                .assignedTo(task.getAssignedTo().getId())
+                .taskName(task.getTaskName())
+                .deadline(task.getDeadline())
+                .status(task.getStatus())
+                .feedback(task.getFeedback())
+                .createdAt(task.getCreatedAt())
+                .updatedAt(task.getUpdatedAt())
+                .build();
     }
 }

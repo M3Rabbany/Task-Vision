@@ -1,7 +1,9 @@
 package com.red.team.taskvisionapp.service;
 
+import com.red.team.taskvisionapp.model.dto.request.TaskApproveRequest;
 import com.red.team.taskvisionapp.model.dto.request.UpdateUserRequest;
 import com.red.team.taskvisionapp.model.dto.request.UserRequest;
+import com.red.team.taskvisionapp.model.dto.response.TaskResponse;
 import com.red.team.taskvisionapp.model.dto.response.UserResponse;
 import com.red.team.taskvisionapp.model.entity.User;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -14,4 +16,8 @@ public interface UserService extends UserDetailsService {
     User getUserByEmail(String email);
     UserResponse updateUser(String id, UpdateUserRequest request);
     void deleteUser(String id);
+    List<TaskResponse> getAllTasksByUserId(String id);
+    List<TaskResponse> getPendingTaskById(String id);
+    TaskResponse getFeedbackTaskById(String userId, String taskId);
+    TaskResponse requestApprovalTask(String taskId);
 }
