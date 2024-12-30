@@ -14,10 +14,4 @@ public class CommonResponse<T> {
     private String message;
     private T data;
     private String error;
-
-    public CommonResponse(String message, T data, int statusCode) {
-        this.message = message;
-        this.data = data;
-        this.statusCode = statusCode;
-    }
 }

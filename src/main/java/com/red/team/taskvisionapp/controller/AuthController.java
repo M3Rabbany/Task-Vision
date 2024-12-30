@@ -23,6 +23,7 @@ public class AuthController {
         return ResponseEntity.status(HttpStatus.OK)
                 .body(CommonResponse.<LoginResponse>builder()
                         .data(login)
+                        .statusCode(HttpStatus.OK.value())
                         .message("Login successfully!")
                         .build());
     }

@@ -1,16 +1,21 @@
 package com.red.team.taskvisionapp.service.impl;
 
+import com.red.team.taskvisionapp.constant.TaskStatus;
 import com.red.team.taskvisionapp.model.dto.request.*;
+import com.red.team.taskvisionapp.model.dto.response.FeedbackResponse;
 import com.red.team.taskvisionapp.model.dto.response.TaskResponse;
+import com.red.team.taskvisionapp.model.entity.Feedback;
 import com.red.team.taskvisionapp.model.entity.Project;
 import com.red.team.taskvisionapp.model.entity.Task;
 import com.red.team.taskvisionapp.model.entity.User;
+import com.red.team.taskvisionapp.repository.FeedbackRepository;
 import com.red.team.taskvisionapp.repository.ProjectRepository;
 import com.red.team.taskvisionapp.repository.TaskRepository;
 import com.red.team.taskvisionapp.repository.UserRepository;
 import com.red.team.taskvisionapp.service.TaskService;
 import com.red.team.taskvisionapp.service.ValidationService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springdoc.api.OpenApiResourceNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
@@ -23,6 +28,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TaskServiceImpl implements TaskService {
@@ -30,25 +36,12 @@ public class TaskServiceImpl implements TaskService {
     private final UserRepository userRepository;
     private final ProjectRepository projectRepository;
     private final ValidationService validationService;
+    private final FeedbackRepository feedbackRepository;
 
     @Override
     public List<TaskResponse> getTasksByProject(String projectId) {
         List<Task> tasks = taskRepository.findByProjectId(projectId);
-        List<TaskResponse> taskResponses = new ArrayList<>();
-        for (Task task : tasks) {
-            taskResponses.add(new TaskResponse(
-                    task.getId(),
-                    task.getProject().getId(),
-                    task.getAssignedTo().getId(),
-                    task.getTaskName(),
-                    task.getDeadline(),
-                    task.getStatus(),
-                    task.getFeedback(),
-                    task.getCreatedAt(),
-                    task.getUpdatedAt()
-            ));
-        }
-        return taskResponses;
+        return tasks.stream().map(this::toTaskResponse).collect(Collectors.toList());
     }
 
     @Override
@@ -64,7 +57,6 @@ public class TaskServiceImpl implements TaskService {
 
         Task task = taskRepository.findById(request.getTaskId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ("Task not found")));
-
 
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ("User not found")));
@@ -92,31 +84,38 @@ public class TaskServiceImpl implements TaskService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot approve a task with feedback provided");
         }
 
-        task.setStatus("Approved");
+        task.setStatus(TaskStatus.APPROVED);
         task.setProject(project);
         task.setUpdatedAt(LocalDateTime.now());
         taskRepository.save(task);
     }
 
     @Override
-    public void feedbackTask(TaskFeedbackRequest request) {
+    public FeedbackResponse feedbackTask(TaskFeedbackRequest request) {
         validationService.validate(request);
 
         if (isCurrentUserPM()) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only Project Managers can provide feedback");
         }
 
-        Project project = projectRepository.findById(request.getProjectId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ("Project not found")));
-
         Task task = taskRepository.findById(request.getTaskId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ("Task not found")));
 
-        task.setFeedback(request.getFeedback());
-        task.setProject(project);
-        task.setStatus("Rejected");
-        task.setUpdatedAt(LocalDateTime.now());
-        taskRepository.save(task);
+        Feedback feedback = Feedback.builder()
+                .task(task)
+                .title(request.getFeedback())
+                .feedback(request.getFeedback())
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+
+        feedbackRepository.save(feedback);
+
+        if (task.getFeedback() != null && !task.getFeedback().isEmpty()) {
+            task.setStatus(TaskStatus.REJECTED);
+        }
+
+        return toFeedbackResponse(feedback);
     }
 
 
@@ -131,24 +130,13 @@ public class TaskServiceImpl implements TaskService {
         task.setAssignedTo(user);
         task.setTaskName(taskRequest.getTaskName());
         task.setDeadline(taskRequest.getDeadline());
-        task.setStatus(taskRequest.getStatus());
-        task.setFeedback(taskRequest.getFeedback());
+        task.setStatus(TaskStatus.ON_GOING);
         task.setCreatedAt(LocalDateTime.now());
         task.setUpdatedAt(LocalDateTime.now());
 
-        task = taskRepository.save(task);
+        taskRepository.save(task);
 
-        return new TaskResponse(
-                task.getId(),
-                task.getProject().getId(),
-                task.getAssignedTo().getId(),
-                task.getTaskName(),
-                task.getDeadline(),
-                task.getStatus(),
-                task.getFeedback(),
-                task.getCreatedAt(),
-                task.getUpdatedAt()
-        );
+        return toTaskResponse(task);
     }
 
     @Override
@@ -162,23 +150,12 @@ public class TaskServiceImpl implements TaskService {
         task.setAssignedTo(user);
         task.setTaskName(taskRequest.getTaskName());
         task.setDeadline(taskRequest.getDeadline());
-        task.setStatus(taskRequest.getStatus());
-        task.setFeedback(taskRequest.getFeedback());
+        task.setStatus(TaskStatus.ON_GOING);
         task.setUpdatedAt(LocalDateTime.now());
 
         task = taskRepository.save(task);
 
-        return new TaskResponse(
-                task.getId(),
-                task.getProject().getId(),
-                task.getAssignedTo().getId(),
-                task.getTaskName(),
-                task.getDeadline(),
-                task.getStatus(),
-                task.getFeedback(),
-                task.getCreatedAt(),
-                task.getUpdatedAt()
-        );
+        return toTaskResponse(task);
     }
 
     @Override
@@ -199,11 +176,21 @@ public class TaskServiceImpl implements TaskService {
                 .projectId(task.getProject().getId())
                 .taskName(task.getTaskName())
                 .deadline(task.getDeadline())
-                .status(task.getStatus())
+                .status(TaskStatus.valueOf(task.getStatus().toString()))
                 .feedback(task.getFeedback())
                 .createdAt(task.getCreatedAt())
                 .updatedAt(task.getUpdatedAt())
                 .build();
+    }
 
+    private FeedbackResponse toFeedbackResponse(Feedback feedback) {
+        return FeedbackResponse.builder()
+                .id(feedback.getId())
+                .taskId(feedback.getTask().getId())
+                .title(feedback.getTask().getTaskName())
+                .feedback(feedback.getFeedback())
+                .createdAt(feedback.getCreatedAt())
+                .updatedAt(feedback.getUpdatedAt())
+                .build();
     }
 }
