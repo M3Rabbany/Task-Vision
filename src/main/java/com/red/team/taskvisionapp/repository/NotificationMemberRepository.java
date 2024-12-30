@@ -1,5 +1,6 @@
 package com.red.team.taskvisionapp.repository;
 
+import com.red.team.taskvisionapp.model.entity.Notification;
 import com.red.team.taskvisionapp.model.entity.NotificationMember;
 import com.red.team.taskvisionapp.model.entity.NotificationMembersId;
 import com.red.team.taskvisionapp.model.entity.User;
@@ -12,4 +13,3 @@ import java.util.List;
 public interface NotificationMemberRepository extends JpaRepository<NotificationMember, NotificationMembersId> {
     List<NotificationMember> findByUser(User user);
 }
-

@@ -14,4 +14,3 @@ public interface NotificationRepository extends JpaRepository<Notification, Stri
             "(:filterBy IS NULL OR n.type = :filterBy)")
     Page<Notification> findFilteredNotifications(String search, String filterBy, Pageable pageable);
 }
-
