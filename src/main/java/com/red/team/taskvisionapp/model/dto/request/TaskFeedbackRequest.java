@@ -18,5 +18,6 @@ public class TaskFeedbackRequest {
     @JsonProperty("task_id")
     private String taskId;
     @NotBlank(message = "Feedback is required!")
+    private String title;
     private String feedback;
 }
