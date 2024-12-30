@@ -1,5 +1,6 @@
 package com.red.team.taskvisionapp.model.dto.request;
 
+import com.red.team.taskvisionapp.constant.TaskStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,7 +18,4 @@ public class TaskRequest {
     private String assignedTo;
     private String taskName;
     private LocalDateTime deadline;
-    private String status;
-    private String feedback;
-
 }
