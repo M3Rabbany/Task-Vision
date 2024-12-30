@@ -52,62 +52,6 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
-    public List<TaskResponse> getAllTasksByUserId(String assignedToId) {
-        validationService.validate(assignedToId);
-
-        List<Task> tasks = taskRepository.findByAssignedToId(assignedToId);
-        return tasks.stream().map(this::toTaskResponse).collect(Collectors.toList());
-    }
-
-    @Override
-    public List<TaskResponse> getPendingTaskById(String assignedToId) {
-        validationService.validate(assignedToId);
-
-        List<Task> pendingTasks = taskRepository.findByAssignedToIdAndStatus(assignedToId, "Pending");
-
-        return pendingTasks.stream()
-                .map(this::toTaskResponse)
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public TaskResponse getTaskById(String id, String assignedToId) {
-        validationService.validate(id);
-
-        Task task = taskRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ("Feedback not found")));
-
-        return toTaskResponse(task);
-    }
-
-    @Override
-    public TaskResponse requestApprovalTask(TaskApproveRequest request) {
-        validationService.validate(request);
-
-        Task task = taskRepository.findById(request.getTaskId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ("Task not found")));
-
-        task.setStatus("Pending");
-        task.setUpdatedAt(LocalDateTime.now());
-        taskRepository.save(task);
-
-        return toTaskResponse(task);
-    }
-
-    @Override
-    public List<TaskResponse> getTasksByStatus(String status) {
-
-        if (status == null && status.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Status cannot be empty");
-        }
-
-        List<Task> tasks = taskRepository.findByStatus(status);
-
-        return tasks.stream().map(this::toTaskResponse).collect(Collectors.toList());
-    }
-
-
-    @Override
     public void assignTaskToMember(TaskAssignRequest request) {
         validationService.validate(request);
 
@@ -250,16 +194,16 @@ public class TaskServiceImpl implements TaskService {
     }
 
     private TaskResponse toTaskResponse(Task task) {
-        return new TaskResponse(
-                task.getId(),
-                task.getProject().getId(),
-                task.getAssignedTo().getId(),
-                task.getTaskName(),
-                task.getDeadline(),
-                task.getStatus(),
-                task.getFeedback(),
-                task.getCreatedAt(),
-                task.getUpdatedAt()
-        );
+        return TaskResponse.builder()
+                .id(task.getId())
+                .projectId(task.getProject().getId())
+                .taskName(task.getTaskName())
+                .deadline(task.getDeadline())
+                .status(task.getStatus())
+                .feedback(task.getFeedback())
+                .createdAt(task.getCreatedAt())
+                .updatedAt(task.getUpdatedAt())
+                .build();
+
     }
 }
