@@ -15,4 +15,4 @@ public class NotificationMemberResponse {
     private String id;
     private User user;
     private Notification notification;
-}
+}

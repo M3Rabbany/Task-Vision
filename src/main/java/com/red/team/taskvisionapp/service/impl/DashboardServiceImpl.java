@@ -1,5 +1,6 @@
 package com.red.team.taskvisionapp.service.impl;
 
+import com.red.team.taskvisionapp.constant.TaskStatus;
 import com.red.team.taskvisionapp.model.dto.response.DashboardResponse;
 import com.red.team.taskvisionapp.model.dto.response.KpiResponse;
 import com.red.team.taskvisionapp.model.entity.Task;
@@ -10,6 +11,7 @@ import com.red.team.taskvisionapp.repository.UserRepository;
 import com.red.team.taskvisionapp.service.DashboardService;
 import com.red.team.taskvisionapp.service.ValidationService;
 import lombok.RequiredArgsConstructor;
+import org.apache.poi.ss.formula.functions.T;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -60,17 +62,17 @@ public class DashboardServiceImpl implements DashboardService {
             }
 
             long onTimeTasks = tasks.stream()
-                    .filter(task -> task.getStatus().equalsIgnoreCase("completed") &&
+                    .filter(task -> task.getStatus() == TaskStatus.APPROVED &&
                             task.getUpdatedAt().isBefore(task.getDeadline()))
                     .count();
 
             long lateTasks = tasks.stream()
-                    .filter(task -> task.getStatus().equalsIgnoreCase("completed") &&
+                    .filter(task -> task.getStatus() == TaskStatus.APPROVED &&
                             task.getUpdatedAt().isAfter(task.getDeadline()))
                     .count();
 
             // Custom KPI formula
-            float kpi = ((onTimeTasks * 1) + (lateTasks * 0.5f)) / totalTasks;
+            float kpi = ((onTimeTasks * 1.0f) + (lateTasks * 0.5f)) / totalTasks;
 
             return KpiResponse.builder()
                     .userId(user.getId())
