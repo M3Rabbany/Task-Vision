@@ -45,8 +45,8 @@ public class ProjectServiceImpl implements ProjectService {
         Project project = mapToEntity(projectRequest);
         project = projectRepository.save(project);
         return mapToResponse(project);
-
     }
+
     @Override
     public ProjectResponse updateProject(String id, ProjectRequest projectRequest) {
         Project project = projectRepository.findById(id)

@@ -20,8 +20,7 @@ public class TaskAssignRequest {
     @NotBlank(message = "Task Id is required!")
     @JsonProperty("task_id")
     private String taskId;
-    @NotNull(message = "User Id cannot be null!")
-    @Size(min = 1, message = "User Id cannot be empty!")
+    @NotBlank(message = "User Id is required!")
     @JsonProperty("user_id")
     private String userId;
 }

@@ -107,7 +107,7 @@ public class UserController {
         return ResponseEntity.ok(CommonResponse.<String>builder()
                 .message("Task request approved successfully!")
                 .statusCode(HttpStatus.OK.value())
-                .data(taskResponse.getStatus())
+                .data(taskResponse.getStatus().toString())
                 .build());
     }
 
