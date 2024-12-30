@@ -12,9 +12,11 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@IdClass(NotificationMembersId.class)
 public class NotificationMember {
     @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private String id;
+
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
     private User user;

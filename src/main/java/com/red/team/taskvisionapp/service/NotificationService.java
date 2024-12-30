@@ -11,7 +11,6 @@ import java.time.LocalDate;
 import java.util.List;
 
 public interface NotificationService {
-    NotificationResponse createNotification(Notification notification);
     List<NotificationResponse> getAllNotificationsForUser(User user);
     Page<NotificationResponse> getFilteredNotifications(String search, String filterBy, Pageable pageable);
 }
