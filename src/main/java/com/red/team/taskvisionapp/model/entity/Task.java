@@ -1,5 +1,6 @@
 package com.red.team.taskvisionapp.model.entity;
 
+import com.red.team.taskvisionapp.constant.TaskStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
@@ -30,7 +31,7 @@ public class Task {
     private String taskName;
     private LocalDateTime deadline;
 
-    private String status;
+    private TaskStatus status;
     private String feedback;
 
     @CreatedDate

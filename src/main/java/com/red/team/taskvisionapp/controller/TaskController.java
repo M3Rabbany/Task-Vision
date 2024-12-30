@@ -1,13 +1,17 @@
 package com.red.team.taskvisionapp.controller;
 
+import com.red.team.taskvisionapp.constant.ApiUrl;
 import com.red.team.taskvisionapp.model.dto.request.TaskApproveRequest;
 import com.red.team.taskvisionapp.model.dto.request.TaskAssignRequest;
 import com.red.team.taskvisionapp.model.dto.request.TaskFeedbackRequest;
 import com.red.team.taskvisionapp.model.dto.request.TaskRequest;
 import com.red.team.taskvisionapp.model.dto.response.CommonResponse;
+import com.red.team.taskvisionapp.model.dto.response.FeedbackResponse;
 import com.red.team.taskvisionapp.model.dto.response.TaskResponse;
 import com.red.team.taskvisionapp.service.TaskService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,7 +19,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/projects/{projectId}/tasks")
+@Slf4j
+@RequestMapping(ApiUrl.BASE_URL + ApiUrl.PROJECTS + "/{projectId}" + ApiUrl.TASKS)
 @RequiredArgsConstructor
 public class TaskController {
 
@@ -74,7 +79,10 @@ public class TaskController {
     }
 
     @PostMapping("/{taskId}/assign")
-    public ResponseEntity<CommonResponse<String>> assignTask(TaskAssignRequest request) {
+    public ResponseEntity<CommonResponse<String>> assignTaskToMember(
+            @Valid @RequestBody TaskAssignRequest request) {
+        log.info("Received TaskAssignRequest: {}", request);
+
         taskService.assignTaskToMember(request);
         return ResponseEntity.ok(CommonResponse.<String>builder()
                 .message("Task assigned successfully!")
@@ -83,7 +91,7 @@ public class TaskController {
     }
 
     @PostMapping("/{taskId}/approve")
-    public ResponseEntity<CommonResponse<String>> approveTask(TaskApproveRequest request) {
+    public ResponseEntity<CommonResponse<String>> approveTask(@RequestBody TaskApproveRequest request) {
         taskService.approveTask(request);
         return ResponseEntity.ok(CommonResponse.<String>builder()
                 .message("Task approved successfully!")
@@ -91,12 +99,13 @@ public class TaskController {
                 .build());
     }
 
-    @PostMapping("/{taskId}/feedback")
-    public ResponseEntity<CommonResponse<String>> feedbackTask(TaskFeedbackRequest request) {
-        taskService.feedbackTask(request);
-        return ResponseEntity.ok(CommonResponse.<String>builder()
+    @PostMapping("/{taskId}/" + ApiUrl.FEEDBACK)
+    public ResponseEntity<CommonResponse<FeedbackResponse>> feedbackTask(@RequestBody TaskFeedbackRequest request) {
+        FeedbackResponse response = taskService.feedbackTask(request);
+        return ResponseEntity.ok(CommonResponse.<FeedbackResponse>builder()
                 .message("Task rejected successfully!")
                 .statusCode(HttpStatus.OK.value())
+                .data(response)
                 .build());
     }
 }

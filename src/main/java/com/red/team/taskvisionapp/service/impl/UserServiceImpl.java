@@ -1,5 +1,6 @@
 package com.red.team.taskvisionapp.service.impl;
 
+import com.red.team.taskvisionapp.constant.TaskStatus;
 import com.red.team.taskvisionapp.constant.UserRole;
 import com.red.team.taskvisionapp.model.dto.request.TaskApproveRequest;
 import com.red.team.taskvisionapp.model.dto.request.UpdateUserRequest;
@@ -102,7 +103,7 @@ public class UserServiceImpl implements UserService {
     public List<TaskResponse> getPendingTaskById(String id) {
         validationService.validate(id);
 
-        List<Task> tasks = taskRepository.findByAssignedToIdAndStatus(id, "Pending"); // Pending
+        List<Task> tasks = taskRepository.findByAssignedToIdAndStatus(id, TaskStatus.PENDING); // Pending
         return tasks.stream().map(this::convertToTaskResponse).collect(Collectors.toList());
     }
 
@@ -127,11 +128,11 @@ public class UserServiceImpl implements UserService {
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ("Task not found")));
 
-        if ("Pending".equals(task.getStatus()) || "Approved".equals(task.getStatus())) {
+        if (TaskStatus.PENDING.equals(task.getStatus()) || TaskStatus.APPROVED.equals(task.getStatus())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Task is already in Pending or Approved status");
         }
 
-        task.setStatus("Pending");
+        task.setStatus(TaskStatus.PENDING);
         task.setUpdatedAt(LocalDateTime.now());
         taskRepository.save(task);
 
@@ -165,7 +166,7 @@ public class UserServiceImpl implements UserService {
                 .assignedTo(task.getAssignedTo().getId())
                 .taskName(task.getTaskName())
                 .deadline(task.getDeadline())
-                .status(task.getStatus())
+                .status(TaskStatus.valueOf(task.getStatus().toString()))
                 .feedback(task.getFeedback())
                 .createdAt(task.getCreatedAt())
                 .updatedAt(task.getUpdatedAt())
