@@ -25,4 +25,3 @@ public class NotificationMember {
     @JoinColumn(name = "notification_id", nullable = false)
     private Notification notification;
 }
-

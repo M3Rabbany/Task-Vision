@@ -26,8 +26,8 @@ public class NotificationServiceImpl implements NotificationService {
     public List<NotificationResponse> getAllNotificationsForUser(User user) {
         List<Notification> notifications = notificationMemberRepository.findByUser(user)
                 .stream()
-                .map(NotificationMember::getNotification)
-                .toList();
+                .map(NotificationMember -> NotificationMember.getNotification())
+                .collect(Collectors.toList());
         return notifications.stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
@@ -50,4 +50,3 @@ public class NotificationServiceImpl implements NotificationService {
         return response;
     }
 }
-
