@@ -30,6 +30,10 @@ public class Feedback {
 
     private String feedback;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User createdBy;
+
     @CreatedDate
     @Column(name = "created_at")
     private LocalDateTime createdAt;

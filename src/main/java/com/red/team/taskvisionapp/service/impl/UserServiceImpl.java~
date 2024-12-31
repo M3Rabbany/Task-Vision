@@ -130,6 +130,7 @@ public class UserServiceImpl implements UserService {
                             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Feedback not found"));
                     return toTaskWithFeedbackResponse(task, feedback);
                 })
+                .filter(task -> task.getFeedbackId() != null)
                 .collect(Collectors.toList());
     }
 

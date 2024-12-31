@@ -30,6 +30,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static com.red.team.taskvisionapp.service.impl.UserServiceImpl.getFeedbackResponse;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -213,25 +215,5 @@ public class TaskServiceImpl implements TaskService {
 
     private FeedbackResponse toFeedbackResponse(Feedback feedback) {
         return getFeedbackResponse(feedback);
-    }
-
-    static FeedbackResponse getFeedbackResponse(Feedback feedback) {
-        return FeedbackResponse.builder()
-                .id(feedback.getId())
-                .task(TaskResponse.builder()
-                        .id(feedback.getTask().getId())
-                        .projectId(feedback.getTask().getProject().getId())
-                        .taskName(feedback.getTask().getTaskName())
-                        .deadline(feedback.getTask().getDeadline())
-                        .status(TaskStatus.valueOf(feedback.getTask().getStatus().toString()))
-                        .createdAt(feedback.getTask().getCreatedAt())
-                        .updatedAt(feedback.getTask().getUpdatedAt())
-                        .build())
-                .title(feedback.getTitle())
-                .feedback(feedback.getFeedback())
-                .createdBy(feedback.getCreatedBy().getName())
-                .createdAt(feedback.getCreatedAt())
-                .updatedAt(feedback.getUpdatedAt())
-                .build();
     }
 }
