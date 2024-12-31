@@ -1,5 +1,6 @@
 package com.red.team.taskvisionapp.model.entity;
 
+import com.red.team.taskvisionapp.constant.TypeNotification;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -23,8 +24,8 @@ public class Notification {
     @Column(nullable = false)
     private String content;
 
-    @Column(nullable = false)
-    private String type;
+    @Enumerated(EnumType.STRING)
+    private TypeNotification type;
 
     @Column(name = "is_read", nullable = false)
     private boolean isRead;

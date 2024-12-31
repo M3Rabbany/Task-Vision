@@ -1,20 +1,16 @@
 package com.red.team.taskvisionapp.service.impl;
 
 import com.red.team.taskvisionapp.constant.TaskStatus;
+import com.red.team.taskvisionapp.constant.TypeNotification;
 import com.red.team.taskvisionapp.constant.UserRole;
 import com.red.team.taskvisionapp.model.dto.request.*;
 import com.red.team.taskvisionapp.model.dto.response.FeedbackResponse;
 import com.red.team.taskvisionapp.model.dto.response.TaskResponse;
-import com.red.team.taskvisionapp.model.entity.Feedback;
-import com.red.team.taskvisionapp.model.entity.Project;
-import com.red.team.taskvisionapp.model.entity.Task;
-import com.red.team.taskvisionapp.model.entity.User;
-import com.red.team.taskvisionapp.repository.FeedbackRepository;
-import com.red.team.taskvisionapp.repository.ProjectRepository;
-import com.red.team.taskvisionapp.repository.TaskRepository;
-import com.red.team.taskvisionapp.repository.UserRepository;
+import com.red.team.taskvisionapp.model.entity.*;
+import com.red.team.taskvisionapp.repository.*;
 import com.red.team.taskvisionapp.service.TaskService;
 import com.red.team.taskvisionapp.service.ValidationService;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springdoc.api.OpenApiResourceNotFoundException;
@@ -22,7 +18,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
@@ -39,6 +34,9 @@ public class TaskServiceImpl implements TaskService {
     private final ProjectRepository projectRepository;
     private final ValidationService validationService;
     private final FeedbackRepository feedbackRepository;
+    private final NotificationRepository notificationRepository;
+    private final NotificationMemberRepository notificationMemberRepository;
+
 
     @Override
     public List<TaskResponse> getTasksByProject(String projectId) {
@@ -79,6 +77,21 @@ public class TaskServiceImpl implements TaskService {
         task.setProject(project);
         task.setAssignedTo(user);
         taskRepository.save(task);
+
+        Notification notification = Notification.builder()
+                .content("Task " + task.getTaskName() + " has been assigned to " + user.getName() + ".")
+                .type(TypeNotification.INFO)
+                .isRead(false)
+                .build();
+
+        Notification savedNotification = notificationRepository.save(notification);
+
+        NotificationMember notificationMember = NotificationMember.builder()
+                .user(user)
+                .notification(savedNotification)
+                .build();
+
+        notificationMemberRepository.save(notificationMember);
     }
 
     @Override
@@ -103,6 +116,21 @@ public class TaskServiceImpl implements TaskService {
         task.setProject(project);
         task.setUpdatedAt(LocalDateTime.now());
         taskRepository.save(task);
+
+        Notification notification = Notification.builder()
+                .content("Task " + task.getTaskName() + " has been approved.")
+                .type(TypeNotification.INFO)
+                .isRead(false)
+                .build();
+
+        Notification savedNotification = notificationRepository.save(notification);
+
+        NotificationMember notificationMember = NotificationMember.builder()
+                .user(task.getAssignedTo())
+                .notification(savedNotification)
+                .build();
+
+        notificationMemberRepository.save(notificationMember);
     }
 
     @Override
@@ -137,6 +165,21 @@ public class TaskServiceImpl implements TaskService {
         task.setStatus(TaskStatus.REJECTED);
         taskRepository.save(task);
 
+        Notification notification = Notification.builder()
+                .content("Task " + task.getTaskName() + " has been rejected.")
+                .type(TypeNotification.WARNING)
+                .isRead(false)
+                .build();
+
+        Notification savedNotification = notificationRepository.save(notification);
+
+        NotificationMember notificationMember = NotificationMember.builder()
+                .user(task.getAssignedTo())
+                .notification(savedNotification)
+                .build();
+
+        notificationMemberRepository.save(notificationMember);
+
         return toFeedbackResponse(feedback);
     }
 
@@ -158,6 +201,21 @@ public class TaskServiceImpl implements TaskService {
 
         taskRepository.save(task);
 
+        Notification notification = Notification.builder()
+                .content("Task " + task.getTaskName() + " has been created.")
+                .type(TypeNotification.INFO)
+                .isRead(false)
+                .build();
+
+        Notification savedNotification = notificationRepository.save(notification);
+
+        NotificationMember notificationMember = NotificationMember.builder()
+                .user(user)
+                .notification(savedNotification)
+                .build();
+
+        notificationMemberRepository.save(notificationMember);
+
         return toTaskResponse(task);
     }
 
@@ -176,6 +234,21 @@ public class TaskServiceImpl implements TaskService {
         task.setUpdatedAt(LocalDateTime.now());
 
         task = taskRepository.save(task);
+
+        Notification notification = Notification.builder()
+                .content("Task " + task.getTaskName() + " has been updated.")
+                .type(TypeNotification.INFO)
+                .isRead(false)
+                .build();
+
+        Notification savedNotification = notificationRepository.save(notification);
+
+        NotificationMember notificationMember = NotificationMember.builder()
+                .user(user)
+                .notification(savedNotification)
+                .build();
+
+        notificationMemberRepository.save(notificationMember);
 
         return toTaskResponse(task);
     }

@@ -1,27 +1,27 @@
 package com.red.team.taskvisionapp.service.impl;
 
 import com.red.team.taskvisionapp.constant.TaskStatus;
+import com.red.team.taskvisionapp.constant.TypeNotification;
 import com.red.team.taskvisionapp.constant.UserRole;
-import com.red.team.taskvisionapp.model.dto.request.TaskApproveRequest;
 import com.red.team.taskvisionapp.model.dto.request.UpdateUserRequest;
-import com.red.team.taskvisionapp.model.dto.request.UserFeedbackTaskRequest;
 import com.red.team.taskvisionapp.model.dto.request.UserRequest;
-import com.red.team.taskvisionapp.model.dto.response.FeedbackResponse;
 import com.red.team.taskvisionapp.model.dto.response.TaskResponse;
 import com.red.team.taskvisionapp.model.dto.response.TaskWithFeedbackResponse;
 import com.red.team.taskvisionapp.model.dto.response.UserResponse;
+import com.red.team.taskvisionapp.model.entity.Notification;
+import com.red.team.taskvisionapp.model.entity.NotificationMember;
 import com.red.team.taskvisionapp.model.entity.Feedback;
 import com.red.team.taskvisionapp.model.entity.Task;
 import com.red.team.taskvisionapp.model.entity.User;
+import com.red.team.taskvisionapp.repository.NotificationMemberRepository;
+import com.red.team.taskvisionapp.repository.NotificationRepository;
 import com.red.team.taskvisionapp.repository.FeedbackRepository;
 import com.red.team.taskvisionapp.repository.TaskRepository;
 import com.red.team.taskvisionapp.repository.UserRepository;
 import com.red.team.taskvisionapp.service.UserService;
 import com.red.team.taskvisionapp.service.ValidationService;
 import lombok.RequiredArgsConstructor;
-import org.apache.poi.ss.formula.functions.T;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -33,8 +33,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.red.team.taskvisionapp.service.impl.TaskServiceImpl.getFeedbackResponse;
-
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
@@ -42,6 +40,8 @@ public class UserServiceImpl implements UserService {
     private final ValidationService validationService;
     private final PasswordEncoder passwordEncoder;
     private final TaskRepository taskRepository;
+    private final NotificationRepository notificationRepository;
+    private final NotificationMemberRepository notificationMemberRepository;
     private final FeedbackRepository feedbackRepository;
 
 
@@ -65,7 +65,26 @@ public class UserServiceImpl implements UserService {
                 .kpi(request.getKpi())
                 .createdAt(LocalDateTime.now())
                 .build();
-        return convertToResponse(userRepository.save(user));
+
+        User savedUser = userRepository.save(user);
+
+        Notification notification = Notification.builder()
+                .content("Selamat datang, " + savedUser.getName() + "! Akun Anda telah berhasil dibuat.")
+                .type(TypeNotification.INFO)
+                .isRead(false)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        Notification savedNotification = notificationRepository.save(notification);
+
+        NotificationMember notificationMember = NotificationMember.builder()
+                .user(savedUser)
+                .notification(savedNotification)
+                .build();
+
+        notificationMemberRepository.save(notificationMember);
+
+        return convertToResponse(savedUser);
     }
 
     @Override
@@ -88,6 +107,22 @@ public class UserServiceImpl implements UserService {
         account.setKpi(request.getKpi());
         account.setUpdatedAt(LocalDateTime.now());
         userRepository.save(account);
+
+        Notification notification = Notification.builder()
+                .content("Selamat datang, " + account.getName() + "! Akun Anda telah berhasil diupdate.")
+                .type(TypeNotification.INFO)
+                .isRead(false)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        Notification savedNotification = notificationRepository.save(notification);
+
+        NotificationMember notificationMember = NotificationMember.builder()
+                .user(account)
+                .notification(savedNotification)
+                .build();
+
+        notificationMemberRepository.save(notificationMember);
 
         return convertToResponse(account);
     }
@@ -148,6 +183,22 @@ public class UserServiceImpl implements UserService {
         task.setStatus(TaskStatus.PENDING);
         task.setUpdatedAt(LocalDateTime.now());
         taskRepository.save(task);
+
+        Notification notification = Notification.builder()
+                .content("Task " + task.getTaskName() + " has been requested for approval.")
+                .type(TypeNotification.WARNING)
+                .isRead(false)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        Notification savedNotification = notificationRepository.save(notification);
+
+        NotificationMember notificationMember = NotificationMember.builder()
+                .user(task.getAssignedTo())
+                .notification(savedNotification)
+                .build();
+
+        notificationMemberRepository.save(notificationMember);
 
         return convertToTaskResponse(task);
     }
