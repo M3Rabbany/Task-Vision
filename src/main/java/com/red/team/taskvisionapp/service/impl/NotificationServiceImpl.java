@@ -44,7 +44,7 @@ public class NotificationServiceImpl implements NotificationService {
         NotificationResponse response = new NotificationResponse();
         response.setId(notification.getId());
         response.setContent(notification.getContent());
-        response.setType(notification.getType());
+        response.setType(notification.getType().toString());
         response.setRead(notification.isRead());
         response.setCreatedAt(notification.getCreatedAt());
         return response;
