@@ -32,14 +32,11 @@ public class Task {
     private LocalDateTime deadline;
 
     private TaskStatus status;
-    private String feedback;
 
     @CreatedDate
     private LocalDateTime createdAt;
 
     @LastModifiedDate
     private LocalDateTime updatedAt;
-
-    // Getters and Setters
 }
 

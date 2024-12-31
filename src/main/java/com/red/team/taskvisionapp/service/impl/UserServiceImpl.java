@@ -4,11 +4,16 @@ import com.red.team.taskvisionapp.constant.TaskStatus;
 import com.red.team.taskvisionapp.constant.UserRole;
 import com.red.team.taskvisionapp.model.dto.request.TaskApproveRequest;
 import com.red.team.taskvisionapp.model.dto.request.UpdateUserRequest;
+import com.red.team.taskvisionapp.model.dto.request.UserFeedbackTaskRequest;
 import com.red.team.taskvisionapp.model.dto.request.UserRequest;
+import com.red.team.taskvisionapp.model.dto.response.FeedbackResponse;
 import com.red.team.taskvisionapp.model.dto.response.TaskResponse;
+import com.red.team.taskvisionapp.model.dto.response.TaskWithFeedbackResponse;
 import com.red.team.taskvisionapp.model.dto.response.UserResponse;
+import com.red.team.taskvisionapp.model.entity.Feedback;
 import com.red.team.taskvisionapp.model.entity.Task;
 import com.red.team.taskvisionapp.model.entity.User;
+import com.red.team.taskvisionapp.repository.FeedbackRepository;
 import com.red.team.taskvisionapp.repository.TaskRepository;
 import com.red.team.taskvisionapp.repository.UserRepository;
 import com.red.team.taskvisionapp.service.UserService;
@@ -28,6 +33,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static com.red.team.taskvisionapp.service.impl.TaskServiceImpl.getFeedbackResponse;
+
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
@@ -35,6 +42,7 @@ public class UserServiceImpl implements UserService {
     private final ValidationService validationService;
     private final PasswordEncoder passwordEncoder;
     private final TaskRepository taskRepository;
+    private final FeedbackRepository feedbackRepository;
 
 
     @Override
@@ -108,18 +116,23 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public TaskResponse getFeedbackTaskById(String userId, String taskId) {
-        validationService.validate(userId);
-        validationService.validate(taskId);
+    public List<TaskWithFeedbackResponse> getTasksWithFeedback(String userId) {
+        // Mencari user berdasarkan userId
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
-        User user = userRepository.findFirstById(userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ("User not found")));
+        // Mencari semua task yang diberikan feedback untuk user ini
+        List<Task> tasks = taskRepository.findByAssignedToId(user.getId());
 
-        Task task = taskRepository.findByIdAndAssignedToId(taskId, userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ("Task not found or not assigned to this user")));
-
-        return convertToTaskResponse(task);
+        return tasks.stream()
+                .map(task -> {
+                    Feedback feedback = feedbackRepository.findByTaskId(task.getId())
+                            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Feedback not found"));
+                    return toTaskWithFeedbackResponse(task, feedback);
+                })
+                .collect(Collectors.toList());
     }
+
 
     @Override
     public TaskResponse requestApprovalTask(String taskId) {
@@ -167,9 +180,20 @@ public class UserServiceImpl implements UserService {
                 .taskName(task.getTaskName())
                 .deadline(task.getDeadline())
                 .status(TaskStatus.valueOf(task.getStatus().toString()))
-                .feedback(task.getFeedback())
                 .createdAt(task.getCreatedAt())
                 .updatedAt(task.getUpdatedAt())
                 .build();
     }
+
+    private TaskWithFeedbackResponse toTaskWithFeedbackResponse(Task task, Feedback feedback) {
+        return TaskWithFeedbackResponse.builder()
+                .taskId(task.getId())
+                .feedbackId(feedback.getId())
+                .title(feedback.getTitle())
+                .feedback(feedback.getFeedback())
+                .createdAt(feedback.getCreatedAt())
+                .updatedAt(feedback.getUpdatedAt())
+                .build();
+    }
+
 }
