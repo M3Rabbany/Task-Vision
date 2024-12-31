@@ -9,6 +9,7 @@ import com.red.team.taskvisionapp.model.dto.response.CommonResponse;
 import com.red.team.taskvisionapp.model.dto.response.FeedbackResponse;
 import com.red.team.taskvisionapp.model.dto.response.TaskResponse;
 import com.red.team.taskvisionapp.service.TaskService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -79,7 +80,7 @@ public class TaskController {
 
     @PostMapping("/{taskId}/assign")
     public ResponseEntity<CommonResponse<String>> assignTaskToMember(
-            @RequestBody TaskAssignRequest request) {
+            @Valid @RequestBody TaskAssignRequest request) {
         log.info("Received TaskAssignRequest: {}", request);
 
         taskService.assignTaskToMember(request);

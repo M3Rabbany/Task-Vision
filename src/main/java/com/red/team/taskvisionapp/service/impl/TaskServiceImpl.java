@@ -1,6 +1,7 @@
 package com.red.team.taskvisionapp.service.impl;
 
 import com.red.team.taskvisionapp.constant.TaskStatus;
+import com.red.team.taskvisionapp.constant.UserRole;
 import com.red.team.taskvisionapp.model.dto.request.*;
 import com.red.team.taskvisionapp.model.dto.response.FeedbackResponse;
 import com.red.team.taskvisionapp.model.dto.response.TaskResponse;
@@ -21,6 +22,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
@@ -45,6 +47,7 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
+    @Transactional
     public void assignTaskToMember(TaskAssignRequest request) {
         validationService.validate(request);
 
@@ -60,6 +63,18 @@ public class TaskServiceImpl implements TaskService {
 
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ("User not found")));
+
+        if (!task.getProject().getId().equals(project.getId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Task does not belong to the specified project");
+        }
+
+        if (task.getStatus().equals(TaskStatus.APPROVED)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Task already approve and cannot be reassigned");
+        }
+
+        if (!user.getRole().equals(UserRole.MEMBER)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Task can only be assigned to members");
+        }
 
         task.setProject(project);
         task.setAssignedTo(user);
@@ -80,8 +95,8 @@ public class TaskServiceImpl implements TaskService {
         Task task = taskRepository.findById(request.getTaskId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ("Task not found")));
 
-        if (task.getFeedback() != null && !task.getFeedback().isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot approve a task with feedback provided");
+        if (task.getStatus() == TaskStatus.APPROVED) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot provide feedback to an approved task");
         }
 
         task.setStatus(TaskStatus.APPROVED);
@@ -91,6 +106,7 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
+    @Transactional
     public FeedbackResponse feedbackTask(TaskFeedbackRequest request) {
         validationService.validate(request);
 
@@ -101,9 +117,16 @@ public class TaskServiceImpl implements TaskService {
         Task task = taskRepository.findById(request.getTaskId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ("Task not found")));
 
+        if (task.getStatus() == TaskStatus.APPROVED) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot provide feedback to an approved task");
+        }
+
+        User currentUser = getCurrentUser();
+
         Feedback feedback = Feedback.builder()
                 .task(task)
-                .title(request.getFeedback())
+                .createdBy(currentUser)
+                .title(request.getTitle())
                 .feedback(request.getFeedback())
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
@@ -111,9 +134,8 @@ public class TaskServiceImpl implements TaskService {
 
         feedbackRepository.save(feedback);
 
-        if (task.getFeedback() != null && !task.getFeedback().isEmpty()) {
-            task.setStatus(TaskStatus.REJECTED);
-        }
+        task.setStatus(TaskStatus.REJECTED);
+        taskRepository.save(task);
 
         return toFeedbackResponse(feedback);
     }
@@ -170,6 +192,13 @@ public class TaskServiceImpl implements TaskService {
                 .noneMatch(grantedAuthority -> grantedAuthority.getAuthority().equals("PROJECT_MANAGER"));
     }
 
+    private User getCurrentUser() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        System.out.println("Current User Name/Email: " + email);
+        return userRepository.findFirstByEmail(email)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
+    }
+
     private TaskResponse toTaskResponse(Task task) {
         return TaskResponse.builder()
                 .id(task.getId())
@@ -177,18 +206,30 @@ public class TaskServiceImpl implements TaskService {
                 .taskName(task.getTaskName())
                 .deadline(task.getDeadline())
                 .status(TaskStatus.valueOf(task.getStatus().toString()))
-                .feedback(task.getFeedback())
                 .createdAt(task.getCreatedAt())
                 .updatedAt(task.getUpdatedAt())
                 .build();
     }
 
     private FeedbackResponse toFeedbackResponse(Feedback feedback) {
+        return getFeedbackResponse(feedback);
+    }
+
+    static FeedbackResponse getFeedbackResponse(Feedback feedback) {
         return FeedbackResponse.builder()
                 .id(feedback.getId())
-                .taskId(feedback.getTask().getId())
-                .title(feedback.getTask().getTaskName())
+                .task(TaskResponse.builder()
+                        .id(feedback.getTask().getId())
+                        .projectId(feedback.getTask().getProject().getId())
+                        .taskName(feedback.getTask().getTaskName())
+                        .deadline(feedback.getTask().getDeadline())
+                        .status(TaskStatus.valueOf(feedback.getTask().getStatus().toString()))
+                        .createdAt(feedback.getTask().getCreatedAt())
+                        .updatedAt(feedback.getTask().getUpdatedAt())
+                        .build())
+                .title(feedback.getTitle())
                 .feedback(feedback.getFeedback())
+                .createdBy(feedback.getCreatedBy().getName())
                 .createdAt(feedback.getCreatedAt())
                 .updatedAt(feedback.getUpdatedAt())
                 .build();
