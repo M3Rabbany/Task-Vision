@@ -3,25 +3,25 @@ package com.red.team.taskvisionapp.service.impl;
 import com.red.team.taskvisionapp.constant.TaskStatus;
 import com.red.team.taskvisionapp.constant.TypeNotification;
 import com.red.team.taskvisionapp.constant.UserRole;
-import com.red.team.taskvisionapp.model.dto.request.TaskApproveRequest;
 import com.red.team.taskvisionapp.model.dto.request.UpdateUserRequest;
 import com.red.team.taskvisionapp.model.dto.request.UserRequest;
 import com.red.team.taskvisionapp.model.dto.response.TaskResponse;
+import com.red.team.taskvisionapp.model.dto.response.TaskWithFeedbackResponse;
 import com.red.team.taskvisionapp.model.dto.response.UserResponse;
 import com.red.team.taskvisionapp.model.entity.Notification;
 import com.red.team.taskvisionapp.model.entity.NotificationMember;
+import com.red.team.taskvisionapp.model.entity.Feedback;
 import com.red.team.taskvisionapp.model.entity.Task;
 import com.red.team.taskvisionapp.model.entity.User;
 import com.red.team.taskvisionapp.repository.NotificationMemberRepository;
 import com.red.team.taskvisionapp.repository.NotificationRepository;
+import com.red.team.taskvisionapp.repository.FeedbackRepository;
 import com.red.team.taskvisionapp.repository.TaskRepository;
 import com.red.team.taskvisionapp.repository.UserRepository;
 import com.red.team.taskvisionapp.service.UserService;
 import com.red.team.taskvisionapp.service.ValidationService;
 import lombok.RequiredArgsConstructor;
-import org.apache.poi.ss.formula.functions.T;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -42,6 +42,7 @@ public class UserServiceImpl implements UserService {
     private final TaskRepository taskRepository;
     private final NotificationRepository notificationRepository;
     private final NotificationMemberRepository notificationMemberRepository;
+    private final FeedbackRepository feedbackRepository;
 
 
     @Override
@@ -150,18 +151,23 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public TaskResponse getFeedbackTaskById(String userId, String taskId) {
-        validationService.validate(userId);
-        validationService.validate(taskId);
+    public List<TaskWithFeedbackResponse> getTasksWithFeedback(String userId) {
+        // Mencari user berdasarkan userId
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
-        User user = userRepository.findFirstById(userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ("User not found")));
+        // Mencari semua task yang diberikan feedback untuk user ini
+        List<Task> tasks = taskRepository.findByAssignedToId(user.getId());
 
-        Task task = taskRepository.findByIdAndAssignedToId(taskId, userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ("Task not found or not assigned to this user")));
-
-        return convertToTaskResponse(task);
+        return tasks.stream()
+                .map(task -> {
+                    Feedback feedback = feedbackRepository.findByTaskId(task.getId())
+                            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Feedback not found"));
+                    return toTaskWithFeedbackResponse(task, feedback);
+                })
+                .collect(Collectors.toList());
     }
+
 
     @Override
     public TaskResponse requestApprovalTask(String taskId) {
@@ -225,9 +231,20 @@ public class UserServiceImpl implements UserService {
                 .taskName(task.getTaskName())
                 .deadline(task.getDeadline())
                 .status(TaskStatus.valueOf(task.getStatus().toString()))
-                .feedback(task.getFeedback())
                 .createdAt(task.getCreatedAt())
                 .updatedAt(task.getUpdatedAt())
                 .build();
     }
+
+    private TaskWithFeedbackResponse toTaskWithFeedbackResponse(Task task, Feedback feedback) {
+        return TaskWithFeedbackResponse.builder()
+                .taskId(task.getId())
+                .feedbackId(feedback.getId())
+                .title(feedback.getTitle())
+                .feedback(feedback.getFeedback())
+                .createdAt(feedback.getCreatedAt())
+                .updatedAt(feedback.getUpdatedAt())
+                .build();
+    }
+
 }

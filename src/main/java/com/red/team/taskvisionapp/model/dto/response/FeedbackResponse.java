@@ -13,9 +13,10 @@ import java.time.LocalDateTime;
 @Builder
 public class FeedbackResponse {
     private String id;
-    private String taskId;
+    private TaskResponse task;
     private String title;
     private String feedback;
+    private String createdBy;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }
