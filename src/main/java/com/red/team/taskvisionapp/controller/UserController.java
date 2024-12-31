@@ -3,10 +3,9 @@ package com.red.team.taskvisionapp.controller;
 import com.red.team.taskvisionapp.constant.ApiUrl;
 import com.red.team.taskvisionapp.model.dto.request.TaskApproveRequest;
 import com.red.team.taskvisionapp.model.dto.request.UpdateUserRequest;
+import com.red.team.taskvisionapp.model.dto.request.UserFeedbackTaskRequest;
 import com.red.team.taskvisionapp.model.dto.request.UserRequest;
-import com.red.team.taskvisionapp.model.dto.response.CommonResponse;
-import com.red.team.taskvisionapp.model.dto.response.TaskResponse;
-import com.red.team.taskvisionapp.model.dto.response.UserResponse;
+import com.red.team.taskvisionapp.model.dto.response.*;
 import com.red.team.taskvisionapp.model.entity.User;
 import com.red.team.taskvisionapp.service.TaskService;
 import com.red.team.taskvisionapp.service.UserService;
@@ -91,15 +90,16 @@ public class UserController {
                 .build());
     }
 
-    @GetMapping("/{userId}/tasks/{taskId}/feedback")
-    public ResponseEntity<CommonResponse<String>> getTaskFeedback(@PathVariable String userId, @PathVariable String taskId) {
-        TaskResponse feedback = userService.getFeedbackTaskById(userId, taskId);
-        return ResponseEntity.ok(CommonResponse.<String>builder()
-                .message("Task feedback retrieved successfully!")
-                .data(feedback.getFeedback())
+    @GetMapping("/{userId}/tasks/feedback")
+    public ResponseEntity<CommonResponse<List<TaskWithFeedbackResponse>>> getTasksWithFeedback(@PathVariable String userId) {
+        List<TaskWithFeedbackResponse> tasksWithFeedback = userService.getTasksWithFeedback(userId);
+        return ResponseEntity.ok(CommonResponse.<List<TaskWithFeedbackResponse>>builder()
+                .message("Tasks with feedback retrieved successfully!")
+                .data(tasksWithFeedback)
                 .statusCode(HttpStatus.OK.value())
                 .build());
     }
+
 
     @PutMapping("{taskId}/approval")
     public ResponseEntity<CommonResponse<String>> approveTask(@PathVariable String taskId) {
