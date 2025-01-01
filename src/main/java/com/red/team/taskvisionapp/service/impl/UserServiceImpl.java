@@ -31,6 +31,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -43,6 +44,7 @@ public class UserServiceImpl implements UserService {
     private final NotificationRepository notificationRepository;
     private final NotificationMemberRepository notificationMemberRepository;
     private final FeedbackRepository feedbackRepository;
+    private final EmailServiceImpl emailService;
 
 
     @Override
@@ -67,6 +69,10 @@ public class UserServiceImpl implements UserService {
                 .build();
 
         User savedUser = userRepository.save(user);
+
+        String emailSubject = "Welcome to TaskVision!";
+        String emailBody = "Hello, " + savedUser.getName() + "!\nWelcome to TaskVision! Your account has been successfully created.";
+        emailService.sendEmail(savedUser.getEmail(), emailSubject, emailBody);
 
         Notification notification = Notification.builder()
                 .content("Halo, " + savedUser.getName() + "! Your account has been successfully created.")
@@ -161,8 +167,17 @@ public class UserServiceImpl implements UserService {
 
         return tasks.stream()
                 .map(task -> {
-                    Feedback feedback = feedbackRepository.findByTaskId(task.getId())
-                            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Feedback not found"));
+                    Optional<Feedback> optionalFeedback = feedbackRepository.findByTaskId(task.getId());
+
+                    Feedback feedback = optionalFeedback.orElseGet(() -> Feedback.builder()
+                            .task(task)
+                            .createdBy(user)
+                            .title("No Feedback")
+                            .feedback("No feedback available for this task.")
+                            .createdAt(LocalDateTime.now())
+                            .updatedAt(LocalDateTime.now())
+                            .build());
+
                     return toTaskWithFeedbackResponse(task, feedback);
                 })
                 .collect(Collectors.toList());

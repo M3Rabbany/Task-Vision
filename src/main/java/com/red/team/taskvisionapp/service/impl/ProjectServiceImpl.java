@@ -34,6 +34,7 @@ public class ProjectServiceImpl implements ProjectService {
     private final ValidationService validationService;
     private final NotificationRepository notificationRepository;
     private final NotificationMemberRepository notificationMemberRepository;
+    private final EmailServiceImpl emailService;
 
 
     @Override
@@ -90,6 +91,14 @@ public class ProjectServiceImpl implements ProjectService {
         });
         project.setUsers(users);
         projectRepository.save(project);
+
+        String emailSubject = "You have been assigned to a project";
+        String emailBody = "Hello " + users.get(0).getName() + ",\n\n" +
+                "You have been assigned to a project by the project manager.\n" +
+                "Project name: " + project.getProjectName() + "\n\n" +
+                "Best regards,\n" +
+                "TaskVisionApp";
+        emailService.sendEmail(users.get(0).getEmail(), emailSubject, emailBody);
 
         Notification notification = Notification.builder()
                 .content("User " + users.get(0).getName() + " has been assigned to project " + project.getProjectName() + ".")
