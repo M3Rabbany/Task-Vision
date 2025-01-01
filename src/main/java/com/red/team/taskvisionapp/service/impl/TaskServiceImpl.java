@@ -93,6 +93,7 @@ public class TaskServiceImpl implements TaskService {
                 .content("Task " + task.getTaskName() + " has been assigned to " + user.getName() + ".")
                 .type(TypeNotification.INFO)
                 .isRead(false)
+                .createdAt(LocalDateTime.now())
                 .build();
 
         Notification savedNotification = notificationRepository.save(notification);
@@ -132,6 +133,7 @@ public class TaskServiceImpl implements TaskService {
                 .content("Task " + task.getTaskName() + " has been approved.")
                 .type(TypeNotification.INFO)
                 .isRead(false)
+                .createdAt(LocalDateTime.now())
                 .build();
 
         Notification savedNotification = notificationRepository.save(notification);
@@ -180,6 +182,7 @@ public class TaskServiceImpl implements TaskService {
                 .content("Task " + task.getTaskName() + " has been rejected.")
                 .type(TypeNotification.WARNING)
                 .isRead(false)
+                .createdAt(LocalDateTime.now())
                 .build();
 
         Notification savedNotification = notificationRepository.save(notification);
@@ -212,21 +215,6 @@ public class TaskServiceImpl implements TaskService {
 
         taskRepository.save(task);
 
-        Notification notification = Notification.builder()
-                .content("Task " + task.getTaskName() + " has been created.")
-                .type(TypeNotification.INFO)
-                .isRead(false)
-                .build();
-
-        Notification savedNotification = notificationRepository.save(notification);
-
-        NotificationMember notificationMember = NotificationMember.builder()
-                .user(user)
-                .notification(savedNotification)
-                .build();
-
-        notificationMemberRepository.save(notificationMember);
-
         return toTaskResponse(task);
     }
 
@@ -245,21 +233,6 @@ public class TaskServiceImpl implements TaskService {
         task.setUpdatedAt(LocalDateTime.now());
 
         task = taskRepository.save(task);
-
-        Notification notification = Notification.builder()
-                .content("Task " + task.getTaskName() + " has been updated.")
-                .type(TypeNotification.INFO)
-                .isRead(false)
-                .build();
-
-        Notification savedNotification = notificationRepository.save(notification);
-
-        NotificationMember notificationMember = NotificationMember.builder()
-                .user(user)
-                .notification(savedNotification)
-                .build();
-
-        notificationMemberRepository.save(notificationMember);
 
         return toTaskResponse(task);
     }
@@ -317,5 +290,6 @@ public class TaskServiceImpl implements TaskService {
                 .createdAt(feedback.getCreatedAt())
                 .updatedAt(feedback.getUpdatedAt())
                 .build();
+
     }
 }

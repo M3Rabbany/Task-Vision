@@ -14,7 +14,6 @@ import java.util.List;
 @NoArgsConstructor
 @Builder
 public class ProjectRequest {
-    private String UserId;
     private String projectName;
     private String description;
     private LocalDateTime deadline;
