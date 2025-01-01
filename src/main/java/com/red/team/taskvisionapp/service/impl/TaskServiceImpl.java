@@ -8,6 +8,7 @@ import com.red.team.taskvisionapp.model.dto.response.FeedbackResponse;
 import com.red.team.taskvisionapp.model.dto.response.TaskResponse;
 import com.red.team.taskvisionapp.model.entity.*;
 import com.red.team.taskvisionapp.repository.*;
+import com.red.team.taskvisionapp.service.EmailService;
 import com.red.team.taskvisionapp.service.TaskService;
 import com.red.team.taskvisionapp.service.ValidationService;
 import jakarta.transaction.Transactional;
@@ -36,6 +37,7 @@ public class TaskServiceImpl implements TaskService {
     private final FeedbackRepository feedbackRepository;
     private final NotificationRepository notificationRepository;
     private final NotificationMemberRepository notificationMemberRepository;
+    private final EmailService emailService;
 
 
     @Override
@@ -77,6 +79,15 @@ public class TaskServiceImpl implements TaskService {
         task.setProject(project);
         task.setAssignedTo(user);
         taskRepository.save(task);
+
+        String emailSubject = "Task assigned to you";
+        String emailBody = "Hello " + user.getName() + ",\n\n" +
+                "Your task " + task.getTaskName() + " has been assigned to you.\n\n" +
+                "Please complete the task and submit before deadline.\n\n" +
+                "Best regards,\n" +
+                "TaskVisionApp";
+
+        emailService.sendEmail(user.getEmail(), emailSubject, emailBody);
 
         Notification notification = Notification.builder()
                 .content("Task " + task.getTaskName() + " has been assigned to " + user.getName() + ".")
