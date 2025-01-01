@@ -26,8 +26,8 @@ public class NotificationServiceImpl implements NotificationService {
     public List<NotificationResponse> getAllNotificationsForUser(User user) {
         List<Notification> notifications = notificationMemberRepository.findByUser(user)
                 .stream()
-                .map(NotificationMember -> NotificationMember.getNotification())
-                .collect(Collectors.toList());
+                .map(NotificationMember::getNotification)
+                .toList();
         return notifications.stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
@@ -38,6 +38,14 @@ public class NotificationServiceImpl implements NotificationService {
 
         Page<Notification> notifications = notificationRepository.findFilteredNotifications(search, filterBy, pageable);
         return notifications.map(this::mapToResponse);
+    }
+
+    @Override
+    public void markNotificationAsRead(String id) {
+        Notification notification = notificationRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Notification not found"));
+        notification.setRead(true);
+        notificationRepository.save(notification);
     }
 
     private NotificationResponse mapToResponse(Notification notification) {
