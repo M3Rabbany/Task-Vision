@@ -53,52 +53,17 @@ public class ProjectServiceImpl implements ProjectService {
     public ProjectResponse createProject(ProjectRequest projectRequest) {
         Project project = mapToEntity(projectRequest);
         project = projectRepository.save(project);
-
-        Notification notification = Notification.builder()
-                .content("Project " + project.getProjectName() + " has been created.")
-                .type(TypeNotification.INFO)
-                .isRead(false)
-                .createdAt(LocalDateTime.now())
-                .build();
-
-        Notification savedNotification = notificationRepository.save(notification);
-
-        NotificationMember notificationMember = NotificationMember.builder()
-                .user(project.getUsers().get(0))
-                .notification(savedNotification)
-                .build();
-
-        notificationMemberRepository.save(notificationMember);
-
         return mapToResponse(project);
-
     }
+
     @Override
     public ProjectResponse updateProject(String id, ProjectRequest projectRequest) {
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Project not found"));
         project.setProjectName(projectRequest.getProjectName());
         project.setDescription(projectRequest.getDescription());
-
         project.setDeadline(projectRequest.getDeadline());
         project = projectRepository.save(project);
-
-        Notification notification = Notification.builder()
-                .content("Project " + project.getProjectName() + " has been updated.")
-                .type(TypeNotification.INFO)
-                .isRead(false)
-                .createdAt(LocalDateTime.now())
-                .build();
-
-        Notification savedNotification = notificationRepository.save(notification);
-
-        NotificationMember notificationMember = NotificationMember.builder()
-                .user(project.getUsers().get(0))
-                .notification(savedNotification)
-                .build();
-
-        notificationMemberRepository.save(notificationMember);
-
         return mapToResponse(project);
     }
 
@@ -163,20 +128,12 @@ public class ProjectServiceImpl implements ProjectService {
 
 
     private Project mapToEntity(ProjectRequest projectRequest) {
-        return Project.builder()
-                .projectName(projectRequest.getProjectName())
-                .users(List.of(userRepository.findById(projectRequest.getUserId()).get()))
-                .description(projectRequest.getDescription())
-                .status(ProjectStatus.IN_PROGRESS)
-                .deadline(projectRequest.getDeadline())
-                .build();
-
-//        Project project = new Project();
-//        project.setProjectName(projectRequest.getProjectName());
-//        project.setDescription(projectRequest.getDescription());
-//        project.setStatus(ProjectStatus.IN_PROGRESS);
-//        project.setDeadline(projectRequest.getDeadline());
-//        return project;
+        Project project = new Project();
+        project.setProjectName(projectRequest.getProjectName());
+        project.setDescription(projectRequest.getDescription());
+        project.setStatus(ProjectStatus.IN_PROGRESS);
+        project.setDeadline(projectRequest.getDeadline());
+        return project;
     }
 
     private ProjectResponse mapToResponse(Project project) {
