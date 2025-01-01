@@ -46,4 +46,13 @@ public class NotificationController {
         Page<NotificationResponse> notifications = notificationService.getFilteredNotifications(search, filterBy, pageable);
         return ResponseEntity.ok(notifications);
     }
+
+    @PutMapping("/{id}/read")
+    public ResponseEntity<CommonResponse<String>> markNotificationAsRead(@PathVariable String id) {
+        notificationService.markNotificationAsRead(id);
+        return ResponseEntity.ok(CommonResponse.<String>builder()
+                .message("Notification marked as read")
+                .statusCode(HttpStatus.OK.value())
+                .build());
+    }
 }
