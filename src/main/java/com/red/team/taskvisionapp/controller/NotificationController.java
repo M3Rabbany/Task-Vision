@@ -3,7 +3,6 @@ package com.red.team.taskvisionapp.controller;
 import com.red.team.taskvisionapp.constant.ApiUrl;
 import com.red.team.taskvisionapp.model.dto.response.CommonResponse;
 import com.red.team.taskvisionapp.model.dto.response.NotificationResponse;
-import com.red.team.taskvisionapp.model.entity.Notification;
 import com.red.team.taskvisionapp.model.entity.User;
 import com.red.team.taskvisionapp.repository.UserRepository;
 import com.red.team.taskvisionapp.service.NotificationService;
