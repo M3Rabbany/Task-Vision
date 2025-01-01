@@ -1,5 +1,6 @@
 package com.red.team.taskvisionapp.controller;
 
+import com.red.team.taskvisionapp.constant.TypeNotification;
 import com.red.team.taskvisionapp.model.dto.response.CommonResponse;
 import com.red.team.taskvisionapp.model.dto.response.NotificationResponse;
 import com.red.team.taskvisionapp.model.entity.Notification;
@@ -49,13 +50,13 @@ class NotificationControllerTest {
         notification = new Notification();
         notification.setId("notification-id");
         notification.setContent("Test Notification");
-        notification.setType("INFO");
+        notification.setType(TypeNotification.INFO);
         notification.setRead(false);
 
         notificationResponse = new NotificationResponse();
         notificationResponse.setId(notification.getId());
         notificationResponse.setContent(notification.getContent());
-        notificationResponse.setType(notification.getType());
+        notificationResponse.setType(notification.getType().toString());
         notificationResponse.setRead(notification.isRead());
     }
 

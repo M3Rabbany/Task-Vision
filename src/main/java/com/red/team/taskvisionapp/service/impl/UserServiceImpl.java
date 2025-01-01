@@ -69,7 +69,7 @@ public class UserServiceImpl implements UserService {
         User savedUser = userRepository.save(user);
 
         Notification notification = Notification.builder()
-                .content("Selamat datang, " + savedUser.getName() + "! Akun Anda telah berhasil dibuat.")
+                .content("Halo, " + savedUser.getName() + "! Your account has been successfully created.")
                 .type(TypeNotification.INFO)
                 .isRead(false)
                 .createdAt(LocalDateTime.now())
@@ -109,7 +109,7 @@ public class UserServiceImpl implements UserService {
         userRepository.save(account);
 
         Notification notification = Notification.builder()
-                .content("Selamat datang, " + account.getName() + "! Akun Anda telah berhasil diupdate.")
+                .content("Halo, " + account.getName() + "! Your account has been successfully updated.")
                 .type(TypeNotification.INFO)
                 .isRead(false)
                 .createdAt(LocalDateTime.now())
