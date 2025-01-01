@@ -17,7 +17,7 @@ public class UserRequest {
     private String email;
     @NotBlank(message = "password is required!")
     private String password;
-    private String role;
+    private UserRole role;
     private String contact;
     private Float kpi;
 }
