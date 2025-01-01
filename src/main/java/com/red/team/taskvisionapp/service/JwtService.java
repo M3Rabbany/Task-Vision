@@ -7,4 +7,5 @@ public interface JwtService {
     String generateToken(User user);
     boolean verifyJwtToken(String token);
     JwtClaims getJwtClaims(String token);
+    String validateAndExtractEmail(String token);
 }
