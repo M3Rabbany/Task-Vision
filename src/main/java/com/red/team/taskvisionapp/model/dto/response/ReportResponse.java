@@ -3,7 +3,6 @@ package com.red.team.taskvisionapp.model.dto.response;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.red.team.taskvisionapp.constant.ReportType;
-import com.red.team.taskvisionapp.model.entity.Project;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
