@@ -25,15 +25,15 @@ public class DashboardController {
     private final DashboardService dashboardService;
 
     @GetMapping(ApiUrl.STATUS)
-    public CommonResponse<Page<DashboardResponse>> getDashboardStatus(
+    public ResponseEntity<CommonResponse<Page<DashboardResponse>>> getDashboardStatus(
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "10") int size,
-            @RequestParam(value = "sort", defaultValue = "createdDate") String sort,
+            @RequestParam(value = "sort", defaultValue = "createdAt") String sort,
             @RequestParam(value = "direction", defaultValue = "DESC") String direction,
             @RequestParam(value = "search", required = false) String search,
             @RequestParam(value = "startDate", required = false) String startDate,
             @RequestParam(value = "endDate", required = false) String endDate,
-            @RequestParam(value = "filterBy", defaultValue = "createdDate") String filterBy
+            @RequestParam(value = "filterBy", defaultValue = "createdAt") String filterBy
     ) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.fromString(direction), sort));
 
@@ -42,11 +42,13 @@ public class DashboardController {
 
         Page<DashboardResponse> dashboardResponses = dashboardService.getFilteredDashboards(search, start, end, filterBy, pageable);
 
-        return CommonResponse.<Page<DashboardResponse>>builder()
+        CommonResponse<Page<DashboardResponse>> response = CommonResponse.<Page<DashboardResponse>>builder()
                 .message("Successfully fetched dashboard status.")
                 .statusCode(HttpStatus.OK.value())
                 .data(dashboardResponses)
                 .build();
+
+        return ResponseEntity.ok(response);
     }
 
     private static final Logger logger = LoggerFactory.getLogger(DashboardController.class);

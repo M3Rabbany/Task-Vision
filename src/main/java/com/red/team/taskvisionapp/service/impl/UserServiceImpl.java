@@ -58,6 +58,14 @@ public class UserServiceImpl implements UserService {
     public UserResponse createUser(UserRequest request) {
         validationService.validate(request);
 
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email already exists");
+        }
+
+        if (userRepository.existsByContact(request.getContact())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Contact already exists");
+        }
+
         User user = User.builder()
                 .name(request.getName())
                 .email(request.getEmail())
@@ -91,12 +99,6 @@ public class UserServiceImpl implements UserService {
         notificationMemberRepository.save(notificationMember);
 
         return convertToResponse(savedUser);
-    }
-
-    @Override
-    public User getUserByEmail(String email) {
-        return userRepository.findFirstByEmail(email)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ("User not found")));
     }
 
     @Override
@@ -233,7 +235,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        return userRepository.findFirstByEmail(username)
+        return userRepository.findByEmail(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
     }
