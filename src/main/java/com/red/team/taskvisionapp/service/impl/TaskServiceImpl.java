@@ -8,6 +8,7 @@ import com.red.team.taskvisionapp.model.dto.response.FeedbackResponse;
 import com.red.team.taskvisionapp.model.dto.response.TaskResponse;
 import com.red.team.taskvisionapp.model.entity.*;
 import com.red.team.taskvisionapp.repository.*;
+import com.red.team.taskvisionapp.service.ActivityService;
 import com.red.team.taskvisionapp.service.EmailService;
 import com.red.team.taskvisionapp.service.TaskService;
 import com.red.team.taskvisionapp.service.ValidationService;
@@ -38,7 +39,7 @@ public class TaskServiceImpl implements TaskService {
     private final NotificationRepository notificationRepository;
     private final NotificationMemberRepository notificationMemberRepository;
     private final EmailService emailService;
-
+    private final ActivityService activityService;
 
     @Override
     public List<TaskResponse> getTasksByProject(String projectId) {
@@ -79,6 +80,13 @@ public class TaskServiceImpl implements TaskService {
         task.setProject(project);
         task.setAssignedTo(user);
         taskRepository.save(task);
+
+        Activity activity = new Activity();
+        activity.setProject(project);
+        activity.setEntity("Task");
+        activity.setAction("Update");
+        activity.setDetails("Assign User to Task");
+        activityService.createActivity(activity);
 
         String emailSubject = "Task assigned to you";
         String emailBody = "Hello " + user.getName() + ",\n\n" +
@@ -128,6 +136,12 @@ public class TaskServiceImpl implements TaskService {
         task.setProject(project);
         task.setUpdatedAt(LocalDateTime.now());
         taskRepository.save(task);
+        Activity activity = new Activity();
+        activity.setProject(project);
+        activity.setEntity("Task");
+        activity.setAction("Update");
+        activity.setDetails("Approve Task");
+        activityService.createActivity(activity);
 
         Notification notification = Notification.builder()
                 .content("Task " + task.getTaskName() + " has been approved.")
@@ -178,6 +192,13 @@ public class TaskServiceImpl implements TaskService {
         task.setStatus(TaskStatus.REJECTED);
         taskRepository.save(task);
 
+        Activity activity = new Activity();
+        activity.setProject(task.getProject());
+        activity.setEntity("Task");
+        activity.setAction("Update");
+        activity.setDetails("Reject task and give feedback");
+        activityService.createActivity(activity);
+
         Notification notification = Notification.builder()
                 .content("Task " + task.getTaskName() + " has been rejected.")
                 .type(TypeNotification.WARNING)
@@ -214,6 +235,12 @@ public class TaskServiceImpl implements TaskService {
         task.setUpdatedAt(LocalDateTime.now());
 
         taskRepository.save(task);
+        Activity activity = new Activity();
+        activity.setProject(project);
+        activity.setEntity("Task");
+        activity.setAction("Created");
+        activity.setDetails("Task Created");
+        activityService.createActivity(activity);
 
         return toTaskResponse(task);
     }
@@ -234,12 +261,27 @@ public class TaskServiceImpl implements TaskService {
 
         task = taskRepository.save(task);
 
+        Activity activity = new Activity();
+        activity.setProject(project);
+        activity.setEntity("Task");
+        activity.setAction("Update");
+        activity.setDetails("Update task description");
+        activityService.createActivity(activity);
+
         return toTaskResponse(task);
     }
 
     @Override
     public void deleteTask(String taskId) {
         Task task = taskRepository.findById(taskId).orElseThrow(() -> new OpenApiResourceNotFoundException("Task not found"));
+
+        Activity activity = new Activity();
+        activity.setProject(task.getProject());
+        activity.setEntity("Task");
+        activity.setAction("Update");
+        activity.setDetails("Delete task: " + task.getTaskName());
+        activityService.createActivity(activity);
+
         taskRepository.delete(task);
     }
 

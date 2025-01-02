@@ -7,14 +7,9 @@ import com.red.team.taskvisionapp.model.dto.request.ProjectRequest;
 import com.red.team.taskvisionapp.model.dto.request.UpdateProjectStatusRequest;
 import com.red.team.taskvisionapp.model.dto.response.ProjectResponse;
 import com.red.team.taskvisionapp.model.dto.response.UserResponse;
-import com.red.team.taskvisionapp.model.entity.Notification;
-import com.red.team.taskvisionapp.model.entity.NotificationMember;
-import com.red.team.taskvisionapp.model.entity.Project;
-import com.red.team.taskvisionapp.model.entity.User;
-import com.red.team.taskvisionapp.repository.NotificationMemberRepository;
-import com.red.team.taskvisionapp.repository.NotificationRepository;
-import com.red.team.taskvisionapp.repository.ProjectRepository;
-import com.red.team.taskvisionapp.repository.UserRepository;
+import com.red.team.taskvisionapp.model.entity.*;
+import com.red.team.taskvisionapp.repository.*;
+import com.red.team.taskvisionapp.service.ActivityService;
 import com.red.team.taskvisionapp.service.ProjectService;
 import com.red.team.taskvisionapp.service.ValidationService;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +30,7 @@ public class ProjectServiceImpl implements ProjectService {
     private final NotificationRepository notificationRepository;
     private final NotificationMemberRepository notificationMemberRepository;
     private final EmailServiceImpl emailService;
+    private final ActivityService activityService;
 
 
     @Override
@@ -53,6 +49,12 @@ public class ProjectServiceImpl implements ProjectService {
     public ProjectResponse createProject(ProjectRequest projectRequest) {
         Project project = mapToEntity(projectRequest);
         project = projectRepository.save(project);
+        Activity activity = new Activity();
+        activity.setProject(project);
+        activity.setEntity("Project");
+        activity.setAction("Created");
+        activity.setDetails("Initialized Project");
+        activityService.createActivity(activity);
         return mapToResponse(project);
     }
 
@@ -64,6 +66,12 @@ public class ProjectServiceImpl implements ProjectService {
         project.setDescription(projectRequest.getDescription());
         project.setDeadline(projectRequest.getDeadline());
         project = projectRepository.save(project);
+        Activity activity = new Activity();
+        activity.setProject(project);
+        activity.setEntity("Project");
+        activity.setAction("Updated");
+        activity.setDetails("Updated Description Project");
+        activityService.createActivity(activity);
         return mapToResponse(project);
     }
 
@@ -90,6 +98,12 @@ public class ProjectServiceImpl implements ProjectService {
             }
         });
         project.setUsers(users);
+        Activity activity = new Activity();
+        activity.setProject(project);
+        activity.setEntity("Project");
+        activity.setAction("Updated");
+        activity.setDetails("Assign User to Project");
+        activityService.createActivity(activity);
         projectRepository.save(project);
 
         String emailSubject = "You have been assigned to a project";
@@ -123,8 +137,15 @@ public class ProjectServiceImpl implements ProjectService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found"));
         project.setStatus(request.getProjectStatus());
         projectRepository.save(project);
+        Activity activity = new Activity();
+        activity.setProject(project);
+        activity.setEntity("Project");
+        activity.setAction("Update");
+        activity.setDetails("Update Status Project to " + request.getProjectStatus());
+        activityService.createActivity(activity);
         return mapToResponse(project);
     }
+
 
 
     private Project mapToEntity(ProjectRequest projectRequest) {

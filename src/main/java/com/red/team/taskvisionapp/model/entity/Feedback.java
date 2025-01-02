@@ -30,7 +30,7 @@ public class Feedback {
 
     private String feedback;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "user_id", nullable = false)
     private User createdBy;
 
