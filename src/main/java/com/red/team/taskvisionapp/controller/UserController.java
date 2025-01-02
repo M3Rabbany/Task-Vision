@@ -26,16 +26,6 @@ public class UserController {
         return ResponseEntity.ok(userService.getAllUsers());
     }
 
-    @GetMapping(ApiUrl.EMAIL)
-    public ResponseEntity<CommonResponse<User>> getUserByEmail(@PathVariable String email) {
-        User user = userService.getUserByEmail(email);
-        return ResponseEntity.ok(CommonResponse.<User>builder()
-                        .message("User found!")
-                        .data(user)
-                        .statusCode(HttpStatus.OK.value())
-                .build());
-    }
-
     @PostMapping
     public ResponseEntity<CommonResponse<UserResponse>> createUser(@RequestBody @Valid UserRequest request) {
         UserResponse user = userService.createUser(request);
