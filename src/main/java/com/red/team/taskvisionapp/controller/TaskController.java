@@ -99,7 +99,7 @@ public class TaskController {
                 .build());
     }
 
-    @PostMapping("/{taskId}/" + ApiUrl.FEEDBACK)
+    @PostMapping("/{taskId}" + ApiUrl.FEEDBACK)
     public ResponseEntity<CommonResponse<FeedbackResponse>> feedbackTask(@RequestBody TaskFeedbackRequest request) {
         FeedbackResponse response = taskService.feedbackTask(request);
         return ResponseEntity.ok(CommonResponse.<FeedbackResponse>builder()

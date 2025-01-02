@@ -1,13 +1,18 @@
 package com.red.team.taskvisionapp.service.impl;
 import com.red.team.taskvisionapp.constant.ProjectStatus;
+import com.red.team.taskvisionapp.constant.TypeNotification;
 import com.red.team.taskvisionapp.constant.UserRole;
 import com.red.team.taskvisionapp.model.dto.request.ProjectAssignRequest;
 import com.red.team.taskvisionapp.model.dto.request.ProjectRequest;
 import com.red.team.taskvisionapp.model.dto.request.UpdateProjectStatusRequest;
 import com.red.team.taskvisionapp.model.dto.response.ProjectResponse;
 import com.red.team.taskvisionapp.model.dto.response.UserResponse;
+import com.red.team.taskvisionapp.model.entity.Notification;
+import com.red.team.taskvisionapp.model.entity.NotificationMember;
 import com.red.team.taskvisionapp.model.entity.Project;
 import com.red.team.taskvisionapp.model.entity.User;
+import com.red.team.taskvisionapp.repository.NotificationMemberRepository;
+import com.red.team.taskvisionapp.repository.NotificationRepository;
 import com.red.team.taskvisionapp.repository.ProjectRepository;
 import com.red.team.taskvisionapp.repository.UserRepository;
 import com.red.team.taskvisionapp.service.ProjectService;
@@ -27,6 +32,10 @@ public class ProjectServiceImpl implements ProjectService {
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
     private final ValidationService validationService;
+    private final NotificationRepository notificationRepository;
+    private final NotificationMemberRepository notificationMemberRepository;
+    private final EmailServiceImpl emailService;
+
 
     @Override
     public List<ProjectResponse> getAllProjects() {
@@ -45,15 +54,14 @@ public class ProjectServiceImpl implements ProjectService {
         Project project = mapToEntity(projectRequest);
         project = projectRepository.save(project);
         return mapToResponse(project);
-
     }
+
     @Override
     public ProjectResponse updateProject(String id, ProjectRequest projectRequest) {
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Project not found"));
         project.setProjectName(projectRequest.getProjectName());
         project.setDescription(projectRequest.getDescription());
-
         project.setDeadline(projectRequest.getDeadline());
         project = projectRepository.save(project);
         return mapToResponse(project);
@@ -83,6 +91,30 @@ public class ProjectServiceImpl implements ProjectService {
         });
         project.setUsers(users);
         projectRepository.save(project);
+
+        String emailSubject = "You have been assigned to a project";
+        String emailBody = "Hello " + users.get(0).getName() + ",\n\n" +
+                "You have been assigned to a project by the project manager.\n" +
+                "Project name: " + project.getProjectName() + "\n\n" +
+                "Best regards,\n" +
+                "TaskVisionApp";
+        emailService.sendEmail(users.get(0).getEmail(), emailSubject, emailBody);
+
+        Notification notification = Notification.builder()
+                .content("User " + users.get(0).getName() + " has been assigned to project " + project.getProjectName() + ".")
+                .type(TypeNotification.INFO)
+                .isRead(false)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        Notification savedNotification = notificationRepository.save(notification);
+
+        NotificationMember notificationMember = NotificationMember.builder()
+                .user(users.get(0))
+                .notification(savedNotification)
+                .build();
+
+        notificationMemberRepository.save(notificationMember);
     }
 
     @Override

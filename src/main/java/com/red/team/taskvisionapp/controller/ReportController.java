@@ -5,7 +5,6 @@ import com.red.team.taskvisionapp.constant.ReportType;
 import com.red.team.taskvisionapp.model.dto.request.ReportRequest;
 import com.red.team.taskvisionapp.model.dto.response.CommonResponse;
 import com.red.team.taskvisionapp.model.dto.response.ReportResponse;
-import com.red.team.taskvisionapp.repository.ReportRepository;
 import com.red.team.taskvisionapp.service.ReportService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;

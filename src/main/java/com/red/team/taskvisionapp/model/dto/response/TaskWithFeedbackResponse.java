@@ -11,12 +11,12 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class FeedbackResponse {
-    private String id;
-    private TaskResponse task;
+public class TaskWithFeedbackResponse {
+    private String taskId;
+    private String feedbackId;
     private String title;
     private String feedback;
-    private String createdBy;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }
+
