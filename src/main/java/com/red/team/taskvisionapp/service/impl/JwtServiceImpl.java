@@ -20,8 +20,6 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.Instant;
 import java.util.Date;
 
-import static javax.crypto.Cipher.SECRET_KEY;
-
 @Service
 @RequiredArgsConstructor
 public class JwtServiceImpl implements JwtService{
@@ -68,7 +66,7 @@ public class JwtServiceImpl implements JwtService{
 
             return JwtClaims.builder()
                     .id(decodedJWT.getClaim("id").asString())
-                    .email(decodedJWT.getClaim("email").asString())
+                    .email(decodedJWT.getSubject())
                     .role(decodedJWT.getClaim("role").asString())
                     .build();
         } catch (JWTVerificationException e) {
