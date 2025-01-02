@@ -16,7 +16,6 @@ import java.util.List;
 public interface UserService extends UserDetailsService {
     List<UserResponse> getAllUsers();
     UserResponse createUser(UserRequest userRequest);
-    User getUserByEmail(String email);
     UserResponse updateUser(String id, UpdateUserRequest request);
     void deleteUser(String id);
     List<TaskResponse> getAllTasksByUserId(String id);
