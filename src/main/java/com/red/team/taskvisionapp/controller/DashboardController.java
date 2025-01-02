@@ -5,11 +5,9 @@ import com.red.team.taskvisionapp.model.dto.response.CommonResponse;
 import com.red.team.taskvisionapp.model.dto.response.DashboardResponse;
 import com.red.team.taskvisionapp.model.dto.response.KpiResponse;
 import com.red.team.taskvisionapp.service.DashboardService;
-import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -19,7 +17,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
-import java.util.List;
 
 @RestController
 @RequestMapping(ApiUrl.BASE_URL + ApiUrl.DASHBOARD)
@@ -55,25 +52,28 @@ public class DashboardController {
     private static final Logger logger = LoggerFactory.getLogger(DashboardController.class);
 
     @GetMapping(ApiUrl.KPI)
-    public ResponseEntity<CommonResponse<List<KpiResponse>>> getUserKpiMetrics() {
-        logger.info("Received request to fetch KPI metrics for all users.");
+    public ResponseEntity<CommonResponse<Page<KpiResponse>>> getUserKpiMetrics(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String name) {
 
-        List<KpiResponse> kpiMetrics;
+        logger.info("Received request to fetch KPI metrics for all users with pagination.");
+
+        Page<KpiResponse> kpiMetricsPage;
         try {
-            kpiMetrics = dashboardService.getUserKpiMetrics();
+            kpiMetricsPage = dashboardService.getUserKpiMetrics(page, size, name);
             logger.info("Successfully fetched KPI metrics for all users.");
         } catch (Exception e) {
             logger.error("Error fetching KPI metrics for all users.", e);
             throw e;
         }
 
-        return ResponseEntity.ok(CommonResponse.<List<KpiResponse>>builder()
+        return ResponseEntity.ok(CommonResponse.<Page<KpiResponse>>builder()
                 .message("Successfully fetched KPI metrics for all users.")
                 .statusCode(HttpStatus.OK.value())
-                .data(kpiMetrics)
+                .data(kpiMetricsPage)
                 .build());
     }
-
 }
 
 

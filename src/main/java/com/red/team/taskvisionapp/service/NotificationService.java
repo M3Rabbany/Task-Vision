@@ -13,4 +13,5 @@ import java.util.List;
 public interface NotificationService {
     List<NotificationResponse> getAllNotificationsForUser(User user);
     Page<NotificationResponse> getFilteredNotifications(String search, String filterBy, Pageable pageable);
+    void markNotificationAsRead(String id);
 }

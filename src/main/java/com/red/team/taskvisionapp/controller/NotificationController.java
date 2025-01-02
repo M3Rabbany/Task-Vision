@@ -3,7 +3,6 @@ package com.red.team.taskvisionapp.controller;
 import com.red.team.taskvisionapp.constant.ApiUrl;
 import com.red.team.taskvisionapp.model.dto.response.CommonResponse;
 import com.red.team.taskvisionapp.model.dto.response.NotificationResponse;
-import com.red.team.taskvisionapp.model.entity.Notification;
 import com.red.team.taskvisionapp.model.entity.User;
 import com.red.team.taskvisionapp.repository.UserRepository;
 import com.red.team.taskvisionapp.service.NotificationService;
@@ -45,5 +44,14 @@ public class NotificationController {
             Pageable pageable) {
         Page<NotificationResponse> notifications = notificationService.getFilteredNotifications(search, filterBy, pageable);
         return ResponseEntity.ok(notifications);
+    }
+
+    @PutMapping("/{id}/read")
+    public ResponseEntity<CommonResponse<String>> markNotificationAsRead(@PathVariable String id) {
+        notificationService.markNotificationAsRead(id);
+        return ResponseEntity.ok(CommonResponse.<String>builder()
+                .message("Notification marked as read")
+                .statusCode(HttpStatus.OK.value())
+                .build());
     }
 }

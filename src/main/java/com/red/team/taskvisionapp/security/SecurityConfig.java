@@ -29,6 +29,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/api/v1/users/**").permitAll()
+                                .requestMatchers("/api/auth/forgot-password", "/api/auth/reset-password").permitAll()
+                        .requestMatchers("/api/v1/forgot-password").permitAll()
 //                      .requestMatchers("/api/v1/users/**").hasAuthority(UserRole.ADMIN.name())
                         .requestMatchers("/api/v1/projects/**").permitAll()
                         .requestMatchers("api/v1/dashboard/**").permitAll()
