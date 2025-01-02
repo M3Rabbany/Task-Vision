@@ -84,5 +84,15 @@ public class ProjectController {
                 .build());
     }
 
-
+    @GetMapping("/users/{userId}")
+    public ResponseEntity<CommonResponse<List<ProjectResponse>>> getAllProjectsByUser(
+            @PathVariable String userId
+    ) {
+        List<ProjectResponse> projects = projectService.getAllProjectsByUserId(userId);
+        return ResponseEntity.ok(CommonResponse.<List<ProjectResponse>>builder()
+                .message("Projects retrieved successfully!")
+                .data(projects)
+                .statusCode(HttpStatus.OK.value())
+                .build());
+    }
 }
