@@ -33,6 +33,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/forgot-password").permitAll()
 //                      .requestMatchers("/api/v1/users/**").hasAuthority(UserRole.ADMIN.name())
                         .requestMatchers("/api/v1/projects/**").permitAll()
+                                .requestMatchers("api/v1/notifications/**").permitAll()
                         .requestMatchers("api/v1/dashboard/**").permitAll()
                         .requestMatchers("api/v1/**").permitAll()
                         .anyRequest().authenticated()

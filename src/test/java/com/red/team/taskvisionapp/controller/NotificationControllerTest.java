@@ -76,13 +76,13 @@ class NotificationControllerTest {
     public void testGetFilteredNotifications() {
         Pageable pageable = Pageable.ofSize(10);
         Page<NotificationResponse> notificationPage = new PageImpl<>(Collections.singletonList(notificationResponse));
-        when(notificationService.getFilteredNotifications("Test", "INFO", pageable)).thenReturn(notificationPage);
+        when(notificationService.getFilteredNotifications("Test", TypeNotification.INFO, pageable)).thenReturn(notificationPage);
 
-        ResponseEntity<Page<NotificationResponse>> response = notificationController.getFilteredNotifications("Test", "INFO", pageable);
+        ResponseEntity<CommonResponse<Page<NotificationResponse>>> response = notificationController.getFilteredNotifications("Test", TypeNotification.INFO, pageable);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(1, Objects.requireNonNull(response.getBody()).getContent().size());
-        assertEquals(notificationResponse, response.getBody().getContent().get(0));
-        verify(notificationService, times(1)).getFilteredNotifications("Test", "INFO", pageable);
+        assertEquals(1, Objects.requireNonNull(response.getBody()).getData().getSize());
+        assertEquals(notificationResponse, response.getBody().getData().getContent().get(0));
+        verify(notificationService, times(1)).getFilteredNotifications("Test", TypeNotification.INFO, pageable);
     }
 }

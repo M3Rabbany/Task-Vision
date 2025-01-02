@@ -169,16 +169,16 @@ public class UserServiceImpl implements UserService {
 
         return tasks.stream()
                 .map(task -> {
-                    Optional<Feedback> optionalFeedback = feedbackRepository.findByTaskId(task.getId());
+                    List<Feedback> feedbackList = feedbackRepository.findByTaskId(task.getId());
 
-                    Feedback feedback = optionalFeedback.orElseGet(() -> Feedback.builder()
+                    Feedback feedback = feedbackList.isEmpty()? Feedback.builder()
                             .task(task)
                             .createdBy(user)
                             .title("No Feedback")
                             .feedback("No feedback available for this task.")
                             .createdAt(LocalDateTime.now())
                             .updatedAt(LocalDateTime.now())
-                            .build());
+                            .build(): feedbackList.get(0);
 
                     return toTaskWithFeedbackResponse(task, feedback);
                 })

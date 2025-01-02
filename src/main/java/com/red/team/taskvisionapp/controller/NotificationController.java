@@ -1,14 +1,19 @@
 package com.red.team.taskvisionapp.controller;
 
 import com.red.team.taskvisionapp.constant.ApiUrl;
+import com.red.team.taskvisionapp.constant.TypeNotification;
 import com.red.team.taskvisionapp.model.dto.response.CommonResponse;
 import com.red.team.taskvisionapp.model.dto.response.NotificationResponse;
+import com.red.team.taskvisionapp.model.entity.Notification;
 import com.red.team.taskvisionapp.model.entity.User;
 import com.red.team.taskvisionapp.repository.UserRepository;
 import com.red.team.taskvisionapp.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -38,12 +43,17 @@ public class NotificationController {
     }
 
     @GetMapping("/filter")
-    public ResponseEntity<Page<NotificationResponse>> getFilteredNotifications(
+    public ResponseEntity<CommonResponse<Page<NotificationResponse>>> getFilteredNotifications(
             @RequestParam(required = false) String search,
-            @RequestParam(required = false) String filterBy,
-            Pageable pageable) {
+            @RequestParam(required = false) TypeNotification filterBy, // Assuming TypeNotification is your enum
+            @PageableDefault(size = 10) Pageable pageable) {
+
         Page<NotificationResponse> notifications = notificationService.getFilteredNotifications(search, filterBy, pageable);
-        return ResponseEntity.ok(notifications);
+        return ResponseEntity.ok(CommonResponse.<Page<NotificationResponse>>builder() // Corrected type
+                .message("Notifications found!")
+                .statusCode(HttpStatus.OK.value())
+                .data(notifications)
+                .build());
     }
 
     @PutMapping("/{id}/read")
