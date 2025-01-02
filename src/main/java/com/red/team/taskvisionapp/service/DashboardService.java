@@ -10,6 +10,6 @@ import java.time.LocalDate;
 
 public interface DashboardService {
     Page<DashboardResponse> getFilteredDashboards(String search, LocalDate start, LocalDate end, String filterBy, Pageable pageable);
-    Page<KpiResponse> getUserKpiMetrics(int page, int size, String name);;
+    Page<KpiResponse> getUserKpiMetrics(int page, int size, String name);
 
 }

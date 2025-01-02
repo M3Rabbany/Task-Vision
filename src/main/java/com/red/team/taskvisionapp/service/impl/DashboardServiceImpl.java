@@ -18,6 +18,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
 @Service
@@ -29,16 +31,30 @@ public class DashboardServiceImpl implements DashboardService {
     private final TaskRepository taskRepository;
 
     @Override
-    public Page<DashboardResponse> getFilteredDashboards(String search, LocalDate start, LocalDate end, String filterBy, Pageable pageable) {
+    public Page<DashboardResponse> getFilteredDashboards(
+            String search, LocalDate start, LocalDate end, String filterBy, Pageable pageable) {
+
+        // Konversi LocalDate ke LocalDateTime
+        LocalDateTime startDateTime = start.atStartOfDay();
+        LocalDateTime endDateTime = end.atTime(LocalTime.MAX);
 
         if (filterBy.equalsIgnoreCase("deadline")) {
-            return dashboardRepository.findByDescriptionContainingAndDeadlineBetween(search, start, end, pageable)
-                    .map(project -> new DashboardResponse(project.getId(), project.getDescription(), project.getCreatedAt(), project.getDeadline()));
+            return dashboardRepository.findByDescriptionContainingAndDeadlineBetween(search, startDateTime, endDateTime, pageable)
+                    .map(project -> new DashboardResponse(
+                            project.getId(),
+                            project.getDescription(),
+                            project.getCreatedAt(),
+                            project.getDeadline()));
         } else {
-            return dashboardRepository.findByDescriptionContainingAndCreatedAtBetween(search, start, end, pageable)
-                    .map(project -> new DashboardResponse(project.getId(), project.getDescription(), project.getCreatedAt(), project.getDeadline()));
+            return dashboardRepository.findByDescriptionContainingAndCreatedAtBetween(search, startDateTime, endDateTime, pageable)
+                    .map(project -> new DashboardResponse(
+                            project.getId(),
+                            project.getDescription(),
+                            project.getCreatedAt(),
+                            project.getDeadline()));
         }
     }
+
     @Override
     public Page<KpiResponse> getUserKpiMetrics(int page, int size, String name) {
         Pageable pageable = PageRequest.of(page, size);
@@ -85,5 +101,6 @@ public class DashboardServiceImpl implements DashboardService {
                     .build();
         });
     }
+
 
 }
