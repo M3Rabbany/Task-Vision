@@ -41,8 +41,8 @@ public class Project {
     @ManyToMany
     @JoinTable(
             name = "users_projects",
-            joinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"),
-            inverseJoinColumns = @JoinColumn(name = "project_id", referencedColumnName = "id")
+            joinColumns = @JoinColumn(name = "project_id", referencedColumnName = "id"),
+            inverseJoinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id")
     )
     private List<User> users;
 
