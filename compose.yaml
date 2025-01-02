@@ -1,0 +1,33 @@
+services:
+  backend:
+    image: enigma-red-teams/task-vision
+    ports:
+      - 8080:8080
+    environment:
+      - DB_HOST=task-vision-db-1
+      - DB_PORT=3306
+      - DB_USER=root
+      - DB_PASSWORD=rahasia
+      - DB_NAME=task-vision
+    networks:
+      - task-vision-network
+    depends_on:
+      - db
+  db:
+    image: mysql
+    restart: always
+    volumes:
+      - db-data:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=rahasia
+      - MYSQL_DATABASE=task-vision
+    networks:
+      - task-vision-network
+    expose:
+      - 3306
+      - 33060
+volumes:
+  db-data:
+networks:
+  task-vision-network:
+    driver: bridge
