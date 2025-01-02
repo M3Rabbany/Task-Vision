@@ -23,7 +23,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -51,10 +50,6 @@ public class TaskServiceImpl implements TaskService {
     @Transactional
     public void assignTaskToMember(TaskAssignRequest request) {
         validationService.validate(request);
-
-        if (isCurrentUserPM()) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only Project Managers can assign tasks");
-        }
 
         Project project = projectRepository.findById(request.getProjectId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ("Project not found")));
@@ -118,10 +113,6 @@ public class TaskServiceImpl implements TaskService {
     public void approveTask(TaskApproveRequest request) {
         validationService.validate(request);
 
-        if (isCurrentUserPM()) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only Project Managers can approve tasks");
-        }
-
         Project project = projectRepository.findById(request.getProjectId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ("Project not found")));
 
@@ -164,10 +155,6 @@ public class TaskServiceImpl implements TaskService {
     @Transactional
     public FeedbackResponse feedbackTask(TaskFeedbackRequest request) {
         validationService.validate(request);
-
-        if (isCurrentUserPM()) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only Project Managers can provide feedback");
-        }
 
         Task task = taskRepository.findById(request.getTaskId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ("Task not found")));
@@ -285,15 +272,9 @@ public class TaskServiceImpl implements TaskService {
         taskRepository.delete(task);
     }
 
-    private boolean isCurrentUserPM() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        return authentication.getAuthorities().stream()
-                .noneMatch(grantedAuthority -> grantedAuthority.getAuthority().equals("PROJECT_MANAGER"));
-    }
-
     private User getCurrentUser() {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        System.out.println("Current User Name/Email: " + email);
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
     }
@@ -328,7 +309,7 @@ public class TaskServiceImpl implements TaskService {
                         .build())
                 .title(feedback.getTitle())
                 .feedback(feedback.getFeedback())
-                .createdBy(feedback.getCreatedBy().getName())
+                .createdBy(feedback.getCreatedBy().getEmail())
                 .createdAt(feedback.getCreatedAt())
                 .updatedAt(feedback.getUpdatedAt())
                 .build();
