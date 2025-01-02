@@ -3,7 +3,6 @@ package com.red.team.taskvisionapp.service.impl;
 import com.red.team.taskvisionapp.constant.TaskStatus;
 import com.red.team.taskvisionapp.constant.TypeNotification;
 import com.red.team.taskvisionapp.constant.UserRole;
-import com.red.team.taskvisionapp.model.dto.request.TaskWithFeedbackRequest;
 import com.red.team.taskvisionapp.model.dto.request.UpdateUserRequest;
 import com.red.team.taskvisionapp.model.dto.request.UserRequest;
 import com.red.team.taskvisionapp.model.dto.response.TaskResponse;
@@ -32,6 +31,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -44,6 +44,7 @@ public class UserServiceImpl implements UserService {
     private final NotificationRepository notificationRepository;
     private final NotificationMemberRepository notificationMemberRepository;
     private final FeedbackRepository feedbackRepository;
+    private final EmailServiceImpl emailService;
 
 
     @Override
@@ -57,6 +58,10 @@ public class UserServiceImpl implements UserService {
     public UserResponse createUser(UserRequest request) {
         validationService.validate(request);
 
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email already exists");
+        }
+
         User user = User.builder()
                 .name(request.getName())
                 .email(request.getEmail())
@@ -68,6 +73,10 @@ public class UserServiceImpl implements UserService {
                 .build();
 
         User savedUser = userRepository.save(user);
+
+        String emailSubject = "Welcome to TaskVision!";
+        String emailBody = "Hello, " + savedUser.getName() + "!\nWelcome to TaskVision! Your account has been successfully created.";
+        emailService.sendEmail(savedUser.getEmail(), emailSubject, emailBody);
 
         Notification notification = Notification.builder()
                 .content("Halo, " + savedUser.getName() + "! Your account has been successfully created.")
@@ -86,12 +95,6 @@ public class UserServiceImpl implements UserService {
         notificationMemberRepository.save(notificationMember);
 
         return convertToResponse(savedUser);
-    }
-
-    @Override
-    public User getUserByEmail(String email) {
-        return userRepository.findFirstByEmail(email)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ("User not found")));
     }
 
     @Override
@@ -152,15 +155,30 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public TaskWithFeedbackResponse getTasksWithFeedback(TaskWithFeedbackRequest request) {
+    public List<TaskWithFeedbackResponse> getTasksWithFeedback(String userId) {
         // Mencari user berdasarkan userId
-        User user = userRepository.findById(request.getUserId())
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
-        Task task = taskRepository.findById(request.getTaskId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Task not found"));
+        // Mencari semua task yang diberikan feedback untuk user ini
+        List<Task> tasks = taskRepository.findByAssignedToId(user.getId());
 
-        return toTaskWithFeedbackResponse(user,task, feedbackRepository.findByTaskId(request.getTaskId()));
+        return tasks.stream()
+                .map(task -> {
+                    Optional<Feedback> optionalFeedback = feedbackRepository.findByTaskId(task.getId());
+
+                    Feedback feedback = optionalFeedback.orElseGet(() -> Feedback.builder()
+                            .task(task)
+                            .createdBy(user)
+                            .title("No Feedback")
+                            .feedback("No feedback available for this task.")
+                            .createdAt(LocalDateTime.now())
+                            .updatedAt(LocalDateTime.now())
+                            .build());
+
+                    return toTaskWithFeedbackResponse(task, feedback);
+                })
+                .collect(Collectors.toList());
     }
 
 
@@ -213,7 +231,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        return userRepository.findFirstByEmail(username)
+        return userRepository.findByEmail(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
     }
@@ -231,9 +249,8 @@ public class UserServiceImpl implements UserService {
                 .build();
     }
 
-    private TaskWithFeedbackResponse toTaskWithFeedbackResponse(User user, Task task, Feedback feedback) {
+    private TaskWithFeedbackResponse toTaskWithFeedbackResponse(Task task, Feedback feedback) {
         return TaskWithFeedbackResponse.builder()
-                .userId(user.getId())
                 .taskId(task.getId())
                 .feedbackId(feedback.getId())
                 .title(feedback.getTitle())

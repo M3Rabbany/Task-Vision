@@ -122,18 +122,6 @@ class UserControllerTest {
     }
 
     @Test
-    void testGetUserByEmail() {
-        when(userService.getUserByEmail("test@email.com")).thenReturn(user);
-
-        ResponseEntity<CommonResponse<User>> response = userController.getUserByEmail("test@email.com");
-
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals("User found!", Objects.requireNonNull(response.getBody()).getMessage());
-        assertEquals(user, response.getBody().getData());
-        verify(userService).getUserByEmail("test@email.com");
-    }
-
-    @Test
     void testCreateUser() {
         when(userService.createUser(userRequest)).thenReturn(userResponse);
 
