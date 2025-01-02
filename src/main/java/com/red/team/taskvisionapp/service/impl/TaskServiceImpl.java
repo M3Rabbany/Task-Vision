@@ -252,7 +252,7 @@ public class TaskServiceImpl implements TaskService {
     private User getCurrentUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         System.out.println("Current User Name/Email: " + email);
-        return userRepository.findFirstByEmail(email)
+        return userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
     }
 
