@@ -12,7 +12,7 @@ import java.util.List;
 
 public interface ReportService {
 
-    byte[] generateReport(ReportType reportType) throws IOException;
+    byte[] generateReport(ReportRequest request) throws IOException;
 
     List<ReportResponse> getAllReports();
 

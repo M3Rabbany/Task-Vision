@@ -1,15 +1,19 @@
 package com.red.team.taskvisionapp.controller;
 
 import com.red.team.taskvisionapp.constant.ApiUrl;
+import com.red.team.taskvisionapp.model.dto.request.TaskApproveRequest;
 import com.red.team.taskvisionapp.model.dto.request.UpdateUserRequest;
+import com.red.team.taskvisionapp.model.dto.request.UserFeedbackTaskRequest;
 import com.red.team.taskvisionapp.model.dto.request.UserRequest;
 import com.red.team.taskvisionapp.model.dto.response.*;
 import com.red.team.taskvisionapp.model.entity.User;
+import com.red.team.taskvisionapp.service.TaskService;
 import com.red.team.taskvisionapp.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -26,15 +30,15 @@ public class UserController {
         return ResponseEntity.ok(userService.getAllUsers());
     }
 
-//    @GetMapping(ApiUrl.EMAIL)
-//    public ResponseEntity<CommonResponse<User>> getUserByEmail(@PathVariable String email) {
-//        User user = userService.getUserByEmail(email);
-//        return ResponseEntity.ok(CommonResponse.<User>builder()
-//                        .message("User found!")
-//                        .data(user)
-//                        .statusCode(HttpStatus.OK.value())
-//                .build());
-//    }
+    @GetMapping(ApiUrl.EMAIL)
+    public ResponseEntity<CommonResponse<User>> getUserByEmail(@PathVariable String email) {
+        User user = userService.getUserByEmail(email);
+        return ResponseEntity.ok(CommonResponse.<User>builder()
+                        .message("User found!")
+                        .data(user)
+                        .statusCode(HttpStatus.OK.value())
+                .build());
+    }
 
     @PostMapping
     public ResponseEntity<CommonResponse<UserResponse>> createUser(@RequestBody @Valid UserRequest request) {

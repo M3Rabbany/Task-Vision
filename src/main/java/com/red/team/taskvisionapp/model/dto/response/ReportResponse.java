@@ -9,22 +9,26 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
 public class ReportResponse {
-    private String id;
-    @JsonProperty("project_id")
-    private String projectId;
     @JsonProperty("project_name")
     private String projectName;
-    private ReportType type;
+    private String description;
+    private String status;
+
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss", timezone = "UTC")
     @JsonProperty("created_at")
     private LocalDateTime createdAt;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss", timezone = "UTC")
     @JsonProperty("updated_at")
     private LocalDateTime updatedAt;
+    private List<ReportMember> members;
+    private List<ReportTask> tasks;
+    private List<ReportActivity> activities;
+    private Long progress;
 }

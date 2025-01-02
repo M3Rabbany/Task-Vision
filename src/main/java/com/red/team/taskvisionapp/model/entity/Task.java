@@ -7,6 +7,7 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "tasks")
@@ -28,6 +29,9 @@ public class Task {
     @JoinColumn(name = "assigned_to")
     private User assignedTo;
 
+    @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Feedback> feedbacks;
+
     private String taskName;
     private LocalDateTime deadline;
 
@@ -38,5 +42,7 @@ public class Task {
 
     @LastModifiedDate
     private LocalDateTime updatedAt;
+
+
 }
 
