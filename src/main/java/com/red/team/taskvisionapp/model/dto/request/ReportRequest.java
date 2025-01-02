@@ -14,6 +14,4 @@ import lombok.NoArgsConstructor;
 public class ReportRequest {
     @JsonProperty("project_id")
     private String projectId;
-
-    private ReportType type;
 }
