@@ -176,8 +176,6 @@ public class ProjectServiceImpl implements ProjectService {
                     userResponse.setContact(user.getContact());
                     userResponse.setKpi(user.getKpi());
                     userResponse.setRole(user.getRole());
-                    userResponse.setCreatedAt(user.getCreatedAt());
-                    userResponse.setUpdatedAt(user.getUpdatedAt());
                     return userResponse;
                 })
                 .collect(Collectors.toList());
