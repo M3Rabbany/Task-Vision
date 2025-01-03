@@ -1,6 +1,6 @@
 services:
   backend:
-    image: enigma-red-teams/task-vision
+    image: shiroihana/task-vision
     ports:
       - 8080:8080
     environment:
