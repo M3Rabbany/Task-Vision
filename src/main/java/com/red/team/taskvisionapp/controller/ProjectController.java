@@ -20,7 +20,7 @@ import java.util.List;
 public class ProjectController {
     private final ProjectService projectService;
 
-    @GetMapping
+    @GetMapping("/get")
     public ResponseEntity<CommonResponse<List<ProjectResponse>>> getAllProjects() {
         List<ProjectResponse> projects = projectService.getAllProjects();
         return ResponseEntity.ok(CommonResponse.<List<ProjectResponse>>builder()
@@ -30,7 +30,7 @@ public class ProjectController {
                 .build());
     }
 
-    @PostMapping
+    @PostMapping("/create")
     public ResponseEntity<CommonResponse<ProjectResponse>> createProject(@RequestBody ProjectRequest projectRequest) {
         ProjectResponse createdProject = projectService.createProject(projectRequest);
         return ResponseEntity.status(HttpStatus.CREATED).body(CommonResponse.<ProjectResponse>builder()
