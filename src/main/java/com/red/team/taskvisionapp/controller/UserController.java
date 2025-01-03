@@ -20,13 +20,13 @@ import java.util.List;
 public class UserController {
     private final UserService userService;
 
-    @GetMapping
+    @GetMapping("/get")
     public ResponseEntity<List<UserResponse>> getAllUsers() {
         System.out.println("getAllUsers");
         return ResponseEntity.ok(userService.getAllUsers());
     }
 
-    @PostMapping
+    @PostMapping("/create")
     public ResponseEntity<CommonResponse<UserResponse>> createUser(@RequestBody @Valid UserRequest request) {
         UserResponse user = userService.createUser(request);
         return ResponseEntity.ok(CommonResponse.<UserResponse>builder()
@@ -96,7 +96,5 @@ public class UserController {
                 .data(taskResponse.getStatus().toString())
                 .build());
     }
-
-
 }
 

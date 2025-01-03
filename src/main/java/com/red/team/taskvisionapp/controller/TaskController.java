@@ -26,8 +26,7 @@ public class TaskController {
 
     private final TaskService taskService;
 
-    // GET /api/v1/projects/{projectId}/tasks
-    @GetMapping
+    @GetMapping("/get")
     public ResponseEntity<CommonResponse<List<TaskResponse>>> getTasksByProject(@PathVariable String projectId) {
         List<TaskResponse> tasks = taskService.getTasksByProject(projectId);
         return ResponseEntity.ok(CommonResponse.<List<TaskResponse>>builder()
@@ -37,8 +36,7 @@ public class TaskController {
                 .build());
     }
 
-    // POST /api/v1/projects/{projectId}/tasks
-    @PostMapping
+    @PostMapping("/create")
     public ResponseEntity<CommonResponse<TaskResponse>> createTask(
             @PathVariable String projectId,
             @RequestBody TaskRequest taskRequest) {
@@ -51,7 +49,6 @@ public class TaskController {
                 .build());
     }
 
-    // PUT /api/v1/projects/{projectId}/tasks/{taskId}
     @PutMapping("/{taskId}")
     public ResponseEntity<CommonResponse<TaskResponse>> updateTask(
             @PathVariable String projectId,
@@ -66,7 +63,6 @@ public class TaskController {
                 .build());
     }
 
-    // DELETE /api/v1/projects/{projectId}/tasks/{taskId}
     @DeleteMapping("/{taskId}")
     public ResponseEntity<CommonResponse<Void>> deleteTask(
             @PathVariable String projectId,
