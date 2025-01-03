@@ -18,7 +18,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -167,7 +169,9 @@ public class ProjectServiceImpl implements ProjectService {
         response.setCreatedAt(LocalDateTime.now());
         response.setUpdatedAt(LocalDateTime.now());
 
-        List<UserResponse> userResponses = project.getUsers().stream()
+        List<UserResponse> userResponses = Optional.ofNullable(project.getUsers())
+                .orElse(Collections.emptyList())
+                .stream()
                 .map(user -> {
                     UserResponse userResponse = new UserResponse();
                     userResponse.setId(user.getId());
