@@ -283,6 +283,7 @@ public class TaskServiceImpl implements TaskService {
         return TaskResponse.builder()
                 .id(task.getId())
                 .projectId(task.getProject().getId())
+                .assignedTo(task.getAssignedTo().getId())
                 .taskName(task.getTaskName())
                 .deadline(task.getDeadline())
                 .status(TaskStatus.valueOf(task.getStatus().toString()))

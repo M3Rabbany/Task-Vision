@@ -166,6 +166,22 @@ public class ProjectServiceImpl implements ProjectService {
         response.setDeadline(project.getDeadline());
         response.setCreatedAt(LocalDateTime.now());
         response.setUpdatedAt(LocalDateTime.now());
+
+        List<UserResponse> userResponses = project.getUsers().stream()
+                .map(user -> {
+                    UserResponse userResponse = new UserResponse();
+                    userResponse.setId(user.getId());
+                    userResponse.setName(user.getName());
+                    userResponse.setEmail(user.getEmail());
+                    userResponse.setContact(user.getContact());
+                    userResponse.setKpi(user.getKpi());
+                    userResponse.setRole(user.getRole());
+                    userResponse.setCreatedAt(user.getCreatedAt());
+                    userResponse.setUpdatedAt(user.getUpdatedAt());
+                    return userResponse;
+                })
+                .collect(Collectors.toList());
+        response.setUsers(userResponses);
         return response;
     }
 
