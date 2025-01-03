@@ -56,8 +56,4 @@ public class Project {
             fetch = FetchType.EAGER,
             orphanRemoval = true)
     private List<Report> reports;
-
-    public Project(UUID projectId) {
-    }
-
 }

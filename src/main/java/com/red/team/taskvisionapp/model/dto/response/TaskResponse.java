@@ -19,7 +19,6 @@ public class TaskResponse {
     private String taskName;
     private LocalDateTime deadline;
     private TaskStatus status;
-    private String feedback;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
