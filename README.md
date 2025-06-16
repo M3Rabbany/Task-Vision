@@ -66,6 +66,6 @@ mvn spring-boot:run
 ---
 
 ## 📄 License
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is intended for learning and personal development purposes.
 
 ---
