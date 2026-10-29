@@ -46,13 +46,12 @@ public class AuthController {
 
     @PostMapping("/reset-password")
     public ResponseEntity<CommonResponse<String>> resetPassword(@RequestBody ResetPasswordRequest request) {
-        log.info("Received Token: " + request.getToken());  // Log to check token
         try {
             String email = jwtService.validateAndExtractEmail(request.getToken());
             authService.resetPassword(request);
             return ResponseEntity.ok(CommonResponse.<String>builder()
-                    .message("Password reset link sent successfully!")
-                    .data("Reset link sent to " + email)
+                    .message("Password reset successfully!")
+                    .data("Password has been reset for " + email)
                     .statusCode(HttpStatus.OK.value())
                     .build());
         } catch (ValidationException e) {

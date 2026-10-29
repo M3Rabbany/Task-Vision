@@ -9,6 +9,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfigurationSource;
 
 @Configuration
 @EnableWebSecurity
@@ -16,20 +17,24 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
     private final AuthenticationFilter authentication;
     private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
+    private final CustomAccessDeniedHandler customAccessDeniedHandler;
+    private final CorsConfigurationSource corsConfigurationSource;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .csrf(AbstractHttpConfigurer::disable)
+                .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .exceptionHandling(httpSecurityExceptionHandlingConfigurer -> {
                     httpSecurityExceptionHandlingConfigurer.authenticationEntryPoint(customAuthenticationEntryPoint);
+                    httpSecurityExceptionHandlingConfigurer.accessDeniedHandler(customAccessDeniedHandler);
                 })
                 .authorizeHttpRequests((authorize) -> authorize
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/api/auth/forgot-password", "/api/auth/reset-password").permitAll()
-                        .requestMatchers("api/v1/notifications/**").permitAll()
+                        .requestMatchers("/api/v1/notifications/**").permitAll()
 
                         .requestMatchers("/api/v1/users/get").hasAuthority(UserRole.ADMIN.name())
                         .requestMatchers("/api/v1/users/create").hasAuthority(UserRole.ADMIN.name())
@@ -38,7 +43,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/projects/create").hasAuthority(UserRole.ADMIN.name())
                         .requestMatchers("/api/v1/projects/{id}").hasAuthority(UserRole.ADMIN.name())
                         .requestMatchers("/api/v1/projects/assign").hasAuthority(UserRole.ADMIN.name())
-                        .requestMatchers("api/v1/dashboard/**").hasAuthority(UserRole.ADMIN.name())
+                        .requestMatchers("/api/v1/dashboard/**").hasAuthority(UserRole.ADMIN.name())
 
                         .requestMatchers("/api/v1/projects/{projectId}/status").hasAuthority(UserRole.PROJECT_MANAGER.name())
                         .requestMatchers("/api/v1/projects/{projectId}/tasks/get").hasAuthority(UserRole.PROJECT_MANAGER.name())

@@ -4,6 +4,12 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 
+### Backup files ###
+*~
+*.swp
+*.bak
+*.old
+
 ### STS ###
 .apt_generated
 .classpath

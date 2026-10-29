@@ -1,31 +1,43 @@
 services:
   backend:
-    image: shiroihana/task-vision
+    build: .
+    image: taskvision-app:latest
     ports:
-      - 8080:8080
+      - "8080:8080"
     environment:
-      - DB_HOST=task-vision-db-1
+      - DB_HOST=db
       - DB_PORT=3306
       - DB_USER=root
-      - DB_PASSWORD=rahasia
-      - DB_NAME=task-vision
+      - DB_PASSWORD=CHANGE_ME_DB_PASSWORD
+      - DB_NAME=mydb
+      - DB_URL=jdbc:mysql://db:3306/mydb
+      - DDL_AUTO=update
+      - HIBERNATE_SHOW_SQL=false
+      - JPA_SHOW_SQL=false
     networks:
       - task-vision-network
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    restart: unless-stopped
   db:
-    image: mysql
+    image: mysql:8.0
     restart: always
     volumes:
       - db-data:/var/lib/mysql
     environment:
-      - MYSQL_ROOT_PASSWORD=rahasia
-      - MYSQL_DATABASE=task-vision
+      - MYSQL_ROOT_PASSWORD=CHANGE_ME_DB_PASSWORD
+      - MYSQL_DATABASE=mydb
     networks:
       - task-vision-network
     expose:
-      - 3306
-      - 33060
+      - "3306"
+      - "33060"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pCHANGE_ME_DB_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 volumes:
   db-data:
 networks:
