@@ -34,19 +34,25 @@ public class DashboardServiceImpl implements DashboardService {
     public Page<DashboardResponse> getFilteredDashboards(
             String search, LocalDate start, LocalDate end, String filterBy, Pageable pageable) {
 
-        // Konversi LocalDate ke LocalDateTime
-        LocalDateTime startDateTime = start.atStartOfDay();
-        LocalDateTime endDateTime = end.atTime(LocalTime.MAX);
+        // Konversi LocalDate ke LocalDateTime. Tanggal bersifat opsional dari API,
+        // jadi gunakan rentang lebar bila filter tanggal tidak dikirim.
+        LocalDateTime startDateTime = start != null
+                ? start.atStartOfDay()
+                : LocalDateTime.of(1970, 1, 1, 0, 0);
+        LocalDateTime endDateTime = end != null
+                ? end.atTime(LocalTime.MAX)
+                : LocalDateTime.of(2999, 12, 31, 23, 59, 59);
+        String keyword = search == null ? "" : search;
 
         if (filterBy.equalsIgnoreCase("deadline")) {
-            return dashboardRepository.findByDescriptionContainingAndDeadlineBetween(search, startDateTime, endDateTime, pageable)
+            return dashboardRepository.findByDescriptionContainingAndDeadlineBetween(keyword, startDateTime, endDateTime, pageable)
                     .map(project -> new DashboardResponse(
                             project.getId(),
                             project.getDescription(),
                             project.getCreatedAt(),
                             project.getDeadline()));
         } else {
-            return dashboardRepository.findByDescriptionContainingAndCreatedAtBetween(search, startDateTime, endDateTime, pageable)
+            return dashboardRepository.findByDescriptionContainingAndCreatedAtBetween(keyword, startDateTime, endDateTime, pageable)
                     .map(project -> new DashboardResponse(
                             project.getId(),
                             project.getDescription(),

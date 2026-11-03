@@ -18,6 +18,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.io.ByteArrayOutputStream;
@@ -38,6 +39,7 @@ public class ReportServiceImpl implements ReportService {
 
 
     @Override
+    @Transactional(readOnly = true)
     public byte[] generateReport(ReportRequest request) throws IOException {
         ReportResponse response = createReport(request);
         try (Workbook workbook = new XSSFWorkbook()) {
@@ -202,6 +204,7 @@ public class ReportServiceImpl implements ReportService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ReportResponse createReport(ReportRequest request) {
         Project project = projectRepository.findById(request.getProjectId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found"));
@@ -244,7 +247,7 @@ public class ReportServiceImpl implements ReportService {
         }).collect(Collectors.toList()));
         long approvedTasks = project.getTasks().stream().filter(task -> task.getStatus() == TaskStatus.APPROVED).count();
         long totalTasks = (long) project.getTasks().size();
-        Long progress = approvedTasks * 100 / totalTasks;
+        Long progress = totalTasks == 0 ? 0L : approvedTasks * 100 / totalTasks;
         response.setProgress(progress);
         return response;
     }

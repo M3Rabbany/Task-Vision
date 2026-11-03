@@ -4,15 +4,27 @@ import com.red.team.taskvisionapp.constant.UserRole;
 import com.red.team.taskvisionapp.model.entity.User;
 import com.red.team.taskvisionapp.repository.UserRepository;
 import jakarta.annotation.PostConstruct;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 
 @Component
 public class DefaultAccountInitializer {
+    private static final Logger log = LoggerFactory.getLogger(DefaultAccountInitializer.class);
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+
+    @Value("${app.default-admin.email:}")
+    private String defaultEmail;
+
+    @Value("${app.default-admin.password:}")
+    private String defaultPassword;
 
     public DefaultAccountInitializer(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
@@ -21,8 +33,10 @@ public class DefaultAccountInitializer {
 
     @PostConstruct
     public void initializeDefaultAdmin() {
-        String defaultEmail = "admin@example.com";
-        String defaultPassword = "CHANGE_ME_ADMIN_PASSWORD";
+        if (!StringUtils.hasText(defaultEmail) || !StringUtils.hasText(defaultPassword)) {
+            log.info("Default admin bootstrap dilewati: DEFAULT_ADMIN_EMAIL/DEFAULT_ADMIN_PASSWORD tidak diset.");
+            return;
+        }
 
         if (!userRepository.existsByEmail(defaultEmail)) {
             User adminUser = User.builder()
@@ -36,9 +50,9 @@ public class DefaultAccountInitializer {
                     .build();
 
             userRepository.save(adminUser);
-            System.out.println("Default admin account created with email: " + defaultEmail);
+            log.info("Default admin account created.");
         } else {
-            System.out.println("Default admin account already exists.");
+            log.info("Default admin account already exists.");
         }
     }
 }

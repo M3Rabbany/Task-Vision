@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Task Vision — dashboard kolaborasi dan manajemen project.">
+  <title>Task Vision</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/css/styles.css">
+  <script>
+    try {
+      const savedTheme = localStorage.getItem("taskvision.theme");
+      if (savedTheme) document.documentElement.setAttribute("data-theme", savedTheme);
+    } catch (_) { /* ignore */ }
+  </script>
+</head>
+<body class="app-body">
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar" aria-label="Navigasi utama">
+      <a class="sidebar-brand" href="#/dashboard" id="sidebar-brand">
+        <span class="brand-mark" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></svg>
+        </span>
+        <span>
+          <strong>Task Vision</strong>
+          <small>Project hub</small>
+        </span>
+      </a>
+
+      <nav class="sidebar-nav" id="main-nav" aria-label="Menu aplikasi"></nav>
+
+      <div class="sidebar-spacer"></div>
+
+      <div class="sidebar-user" id="sidebar-user">
+        <span class="avatar" aria-hidden="true">TV</span>
+        <div class="sidebar-user-meta">
+          <strong>Memuat...</strong>
+          <span>—</span>
+        </div>
+      </div>
+    </aside>
+
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <div class="app-main">
+      <header class="topbar">
+        <button class="icon-btn mobile-only" type="button" id="menu-toggle" aria-label="Buka menu">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+        </button>
+
+        <div class="topbar-title">
+          <h1 id="page-title">Task Vision</h1>
+          <p id="page-subtitle">Workspace kolaborasi tim</p>
+        </div>
+
+        <div class="topbar-actions">
+          <div class="topbar-search">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <input id="global-search" type="search" placeholder="Cari di halaman ini..." aria-label="Cari di halaman ini">
+          </div>
+
+          <button class="icon-btn" type="button" id="theme-toggle" aria-label="Ubah tema" title="Ubah tema">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+          </button>
+
+          <button class="icon-btn notif-btn" type="button" id="notification-button" aria-label="Notifikasi" title="Notifikasi">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></svg>
+            <span class="notif-dot hidden" id="notif-badge">0</span>
+          </button>
+
+          <div class="dropdown">
+            <button class="profile-trigger" type="button" id="profile-trigger" aria-expanded="false" aria-haspopup="menu">
+              <span class="avatar" id="topbar-avatar" aria-hidden="true">TV</span>
+              <span>
+                <span class="profile-name" id="topbar-name">Memuat...</span>
+                <span class="profile-role" id="topbar-role">—</span>
+              </span>
+              <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <div class="dropdown-menu" id="profile-menu" role="menu">
+              <div class="dropdown-head">
+                <strong id="menu-name">Memuat...</strong>
+                <span id="menu-email">—</span>
+              </div>
+              <div class="dropdown-sep"></div>
+              <a class="dropdown-item" href="#/profile" role="menuitem">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                Profil saya
+              </a>
+              <a class="dropdown-item" href="#/notifications" role="menuitem">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></svg>
+                Notifikasi
+              </a>
+              <a class="dropdown-item" href="/swagger-ui.html" target="_blank" rel="noreferrer" role="menuitem">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+                API docs
+              </a>
+              <div class="dropdown-sep"></div>
+              <button class="dropdown-item danger" type="button" id="logout-button" role="menuitem">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+                Keluar
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="view" id="view" tabindex="-1">
+        <div class="loading-block" style="padding-top:30px">
+          <div class="skeleton skeleton-stat" style="width:100%;max-width:360px"></div>
+          <div class="skeleton skeleton-card" style="width:100%;max-width:920px"></div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <div id="modal-root"></div>
+  <div id="toast-root" class="toast-stack"></div>
+
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>

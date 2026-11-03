@@ -17,6 +17,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -28,6 +29,9 @@ public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
+
+    @Value("${app.frontend-url:http://localhost:8080}")
+    private String frontendUrl;
 
     @Override
     public LoginResponse login(AuthRequest request) {
@@ -43,6 +47,8 @@ public class AuthServiceImpl implements AuthService {
             String token = jwtService.generateToken(user);
             SecurityContextHolder.getContext().setAuthentication(authentication);
             return LoginResponse.builder()
+                    .id(user.getId())
+                    .name(user.getName())
                     .email(user.getEmail())
                     .role(user.getRole().name())
                     .token(token)
@@ -62,7 +68,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         String resetToken = jwtService.generateToken(user);
-        String resetLink = "http://localhost:8080/swagger-ui/index.html/reset-password?token=" + resetToken;
+        String resetLink = frontendUrl + "/reset-password?token=" + resetToken;
 
         emailService.sendEmail(
                 user.getEmail(),

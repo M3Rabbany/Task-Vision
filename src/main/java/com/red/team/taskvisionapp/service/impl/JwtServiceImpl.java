@@ -9,27 +9,52 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 import com.red.team.taskvisionapp.model.dto.request.JwtClaims;
 import com.red.team.taskvisionapp.model.entity.User;
 import com.red.team.taskvisionapp.service.JwtService;
+import jakarta.annotation.PostConstruct;
 import jakarta.validation.ValidationException;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.security.SecureRandom;
 import java.time.Instant;
+import java.util.Base64;
 import java.util.Date;
 
 @Service
 @RequiredArgsConstructor
 public class JwtServiceImpl implements JwtService{
     private static final Logger log = LoggerFactory.getLogger(JwtServiceImpl.class);
-    private static final String SECRET = "CHANGE_ME_JWT_SECRET";
     private static final String ISSUER = "TASK VISION APP";
+    private static final int SECRET_BYTES = 32;
+
+    @Value("${app.jwt.secret:}")
+    private String configuredSecret;
+
+    private String secret;
+
+    @PostConstruct
+    void initializeSecret() {
+        if (configuredSecret != null && !configuredSecret.isBlank()) {
+            secret = configuredSecret;
+            if (secret.length() < SECRET_BYTES) {
+                log.warn("JWT_SECRET terlalu pendek. Gunakan minimal {} karakter untuk produksi.", SECRET_BYTES);
+            }
+            return;
+        }
+
+        byte[] randomSecret = new byte[SECRET_BYTES];
+        new SecureRandom().nextBytes(randomSecret);
+        secret = Base64.getUrlEncoder().withoutPadding().encodeToString(randomSecret);
+        log.warn("JWT_SECRET tidak diset. Menggunakan secret sementara; token akan tidak valid setelah restart.");
+    }
 
     @Override
     public String generateToken(User user) {
-        Algorithm algorithm = Algorithm.HMAC256(SECRET);
+        Algorithm algorithm = Algorithm.HMAC256(secret);
         try {
             return JWT.create()
                     .withSubject(user.getEmail()) // Use email as subject
@@ -47,7 +72,7 @@ public class JwtServiceImpl implements JwtService{
     @Override
     public boolean verifyJwtToken(String token) {
         try {
-            Algorithm algorithm = Algorithm.HMAC256(SECRET);
+            Algorithm algorithm = Algorithm.HMAC256(secret);
             JWTVerifier jwtVerifier = JWT.require(algorithm).withIssuer(ISSUER).build();
             jwtVerifier.verify(parseJwt(token));
             return true;
@@ -60,7 +85,7 @@ public class JwtServiceImpl implements JwtService{
     @Override
     public JwtClaims getJwtClaims(String token) {
         try {
-            Algorithm algorithm = Algorithm.HMAC256(SECRET);
+            Algorithm algorithm = Algorithm.HMAC256(secret);
             JWTVerifier jwtVerifier = JWT.require(algorithm).withIssuer(ISSUER).build();
             DecodedJWT decodedJWT = jwtVerifier.verify(parseJwt(token));
 
@@ -85,11 +110,11 @@ public class JwtServiceImpl implements JwtService{
     @Override
     public String validateAndExtractEmail(String token) {
         try {
-            Algorithm algorithm = Algorithm.HMAC256(SECRET);
+            Algorithm algorithm = Algorithm.HMAC256(secret);
             JWTVerifier jwtVerifier = JWT.require(algorithm).withIssuer(ISSUER).build();
             DecodedJWT decodedJWT = jwtVerifier.verify(parseJwt(token));
 
-            return decodedJWT.getClaim("email").asString();
+            return decodedJWT.getSubject();
         } catch (JWTVerificationException e) {
             log.error("JWT Verification failed: {}", e.getMessage());
             throw new ValidationException("Invalid or expired token");

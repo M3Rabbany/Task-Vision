@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -91,14 +92,25 @@ public class ProjectServiceImpl implements ProjectService {
         Project project = projectRepository.findById(request.getProjectId())
                 .orElseThrow(() -> new RuntimeException("Project not found"));
         List<User> users = userRepository.findAllById(request.getUserId());
+        if (users.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "At least one user must be selected");
+        }
         users.forEach(user -> {
-            if(project.getUsers().contains(user)){
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "User already assigned to project");
-            }
-            if(user.getRole() == UserRole.ADMIN){
+            if (user.getRole() == UserRole.ADMIN) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Admin cannot be assigned to project");
             }
         });
+
+        // Sinkronkan anggota tim project dengan pilihan terbaru dari frontend.
+        // User yang sudah terpilih tidak lagi dianggap sebagai error agar form
+        // assign dapat dipakai berulang kali untuk menambah/mengurangi anggota.
+        List<User> currentUsers = Optional.ofNullable(project.getUsers())
+                .map(ArrayList::new)
+                .orElseGet(ArrayList::new);
+        List<User> newUsers = users.stream()
+                .filter(user -> !currentUsers.contains(user))
+                .collect(Collectors.toList());
+
         project.setUsers(users);
         Activity activity = new Activity();
         activity.setProject(project);
@@ -108,29 +120,31 @@ public class ProjectServiceImpl implements ProjectService {
         activityService.createActivity(activity);
         projectRepository.save(project);
 
-        String emailSubject = "You have been assigned to a project";
-        String emailBody = "Hello " + users.get(0).getName() + ",\n\n" +
-                "You have been assigned to a project by the project manager.\n" +
-                "Project name: " + project.getProjectName() + "\n\n" +
-                "Best regards,\n" +
-                "TaskVisionApp";
-        emailService.sendEmail(users.get(0).getEmail(), emailSubject, emailBody);
+        newUsers.forEach(user -> {
+            String emailSubject = "You have been assigned to a project";
+            String emailBody = "Hello " + user.getName() + ",\n\n" +
+                    "You have been assigned to a project by the project manager.\n" +
+                    "Project name: " + project.getProjectName() + "\n\n" +
+                    "Best regards,\n" +
+                    "TaskVisionApp";
+            emailService.sendEmail(user.getEmail(), emailSubject, emailBody);
 
-        Notification notification = Notification.builder()
-                .content("User " + users.get(0).getName() + " has been assigned to project " + project.getProjectName() + ".")
-                .type(TypeNotification.INFO)
-                .isRead(false)
-                .createdAt(LocalDateTime.now())
-                .build();
+            Notification notification = Notification.builder()
+                    .content("You have been assigned to project " + project.getProjectName() + ".")
+                    .type(TypeNotification.INFO)
+                    .isRead(false)
+                    .createdAt(LocalDateTime.now())
+                    .build();
 
-        Notification savedNotification = notificationRepository.save(notification);
+            Notification savedNotification = notificationRepository.save(notification);
 
-        NotificationMember notificationMember = NotificationMember.builder()
-                .user(users.get(0))
-                .notification(savedNotification)
-                .build();
+            NotificationMember notificationMember = NotificationMember.builder()
+                    .user(user)
+                    .notification(savedNotification)
+                    .build();
 
-        notificationMemberRepository.save(notificationMember);
+            notificationMemberRepository.save(notificationMember);
+        });
     }
 
     @Override

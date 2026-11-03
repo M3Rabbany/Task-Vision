@@ -35,6 +35,12 @@ public class SecurityConfig {
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/api/auth/forgot-password", "/api/auth/reset-password").permitAll()
                         .requestMatchers("/api/v1/notifications/**").permitAll()
+                        // Frontend (HTML/CSS/JS) is served by Spring Boot and guarded client-side.
+                        .requestMatchers(
+                                "/", "/login", "/app", "/forgot-password", "/reset-password",
+                                "/index.html", "/app.html", "/reset-password.html",
+                                "/css/**", "/js/**", "/assets/**", "/favicon.ico", "/favicon.svg", "/error"
+                        ).permitAll()
 
                         .requestMatchers("/api/v1/users/get").hasAuthority(UserRole.ADMIN.name())
                         .requestMatchers("/api/v1/users/create").hasAuthority(UserRole.ADMIN.name())
