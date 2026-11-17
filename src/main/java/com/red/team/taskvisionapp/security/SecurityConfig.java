@@ -4,6 +4,7 @@ import com.red.team.taskvisionapp.constant.UserRole;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -34,7 +35,6 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/api/auth/forgot-password", "/api/auth/reset-password").permitAll()
-                        .requestMatchers("/api/v1/notifications/**").permitAll()
                         // Frontend (HTML/CSS/JS) is served by Spring Boot and guarded client-side.
                         .requestMatchers(
                                 "/", "/login", "/app", "/forgot-password", "/reset-password",
@@ -52,7 +52,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/dashboard/**").hasAuthority(UserRole.ADMIN.name())
 
                         .requestMatchers("/api/v1/projects/{projectId}/status").hasAuthority(UserRole.PROJECT_MANAGER.name())
-                        .requestMatchers("/api/v1/projects/{projectId}/tasks/get").hasAuthority(UserRole.PROJECT_MANAGER.name())
+                        // Admin dapat meninjau board task (read-only), sedangkan perubahan tetap milik PM.
+                        .requestMatchers(HttpMethod.GET, "/api/v1/projects/{projectId}/tasks/get")
+                        .hasAnyAuthority(UserRole.ADMIN.name(), UserRole.PROJECT_MANAGER.name())
                         .requestMatchers("/api/v1/projects/{projectId}/tasks/create").hasAuthority(UserRole.PROJECT_MANAGER.name())
                         .requestMatchers("/api/v1/projects/{projectId}/tasks/{taskId}").hasAuthority(UserRole.PROJECT_MANAGER.name())
                         .requestMatchers("/api/v1/projects/{projectId}/tasks/{taskId}/assign").hasAuthority(UserRole.PROJECT_MANAGER.name())

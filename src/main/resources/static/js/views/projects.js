@@ -263,11 +263,11 @@ function projectCard(project, { isAdmin, isManager }) {
               <option value="COMPLETED" ${project.status === "COMPLETED" ? "selected" : ""}>Completed</option>
             </select>
           ` : ""}
-          ${isAdmin ? "" : `
+          ${isAdmin || isManager ? `
             <button class="btn btn-outline btn-sm" type="button" data-action="open-tasks" data-id="${escapeHtml(project.id)}">
               ${icon("check-square", 13)} Board
             </button>
-          `}
+          ` : ""}
         </div>
       </div>
     </article>

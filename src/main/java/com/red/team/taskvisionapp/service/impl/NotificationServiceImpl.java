@@ -9,17 +9,17 @@ import com.red.team.taskvisionapp.repository.NotificationMemberRepository;
 import com.red.team.taskvisionapp.repository.NotificationRepository;
 import com.red.team.taskvisionapp.service.NotificationService;
 import lombok.AllArgsConstructor;
-import org.hibernate.query.SortDirection;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.domain.JpaSort;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.stream.Collectors;
-
 
 @Service
 @AllArgsConstructor
@@ -40,18 +40,32 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    public Page<NotificationResponse> getFilteredNotifications(String search, TypeNotification filterBy, Pageable pageable) {
-        pageable = PageRequest.of(0, 10, Sort.by("createdAt").ascending());
-        Page<Notification> notifications = notificationRepository.findFilteredNotifications(search, filterBy, pageable);
+    public Page<NotificationResponse> getFilteredNotifications(
+            User user,
+            String search,
+            TypeNotification filterBy,
+            Boolean read,
+            Pageable pageable) {
+        Pageable effectivePageable = pageable.getSort().isSorted()
+                ? pageable
+                : PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by("createdAt").descending());
+        String keyword = StringUtils.hasText(search) ? search.trim() : null;
+
+        Page<Notification> notifications = notificationRepository.findFilteredNotificationsForUser(
+                user.getId(), keyword, filterBy, read, effectivePageable);
         return notifications.map(this::mapToResponse);
     }
 
     @Override
-    public void markNotificationAsRead(String id) {
-        Notification notification = notificationRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Notification not found"));
-        notification.setRead(true);
-        notificationRepository.save(notification);
+    public void markNotificationAsRead(String id, User user) {
+        NotificationMember membership = notificationMemberRepository.findByNotificationIdAndUserId(id, user.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Notification not found"));
+
+        Notification notification = membership.getNotification();
+        if (!notification.isRead()) {
+            notification.setRead(true);
+            notificationRepository.save(notification);
+        }
     }
 
     private NotificationResponse mapToResponse(Notification notification) {

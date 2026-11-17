@@ -12,8 +12,11 @@ import com.red.team.taskvisionapp.repository.*;
 import com.red.team.taskvisionapp.service.ActivityService;
 import com.red.team.taskvisionapp.service.ProjectService;
 import com.red.team.taskvisionapp.service.ValidationService;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -44,6 +47,11 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     public List<ProjectResponse> getAllProjectsByUserId(String userId) {
+        User currentUser = getCurrentUser();
+        if (currentUser.getRole() != UserRole.ADMIN && !currentUser.getId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You cannot access another user's projects");
+        }
+
         List<Project> projects = projectRepository.findAllByUsers_Id(userId);
         return projects.stream().map(this::mapToResponse).collect(Collectors.toList());
     }
@@ -87,13 +95,17 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
+    @Transactional
     public void assignUserToProject(ProjectAssignRequest request) {
         validationService.validate(request);
         Project project = projectRepository.findById(request.getProjectId())
-                .orElseThrow(() -> new RuntimeException("Project not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found"));
         List<User> users = userRepository.findAllById(request.getUserId());
         if (users.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "At least one user must be selected");
+        }
+        if (users.size() != request.getUserId().size()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "One or more selected users were not found");
         }
         users.forEach(user -> {
             if (user.getRole() == UserRole.ADMIN) {
@@ -148,9 +160,12 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
+    @Transactional
     public ProjectResponse updateStatus(UpdateProjectStatusRequest request) {
         Project project = projectRepository.findById(request.getProjectId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found"));
+        assertCanManageProject(project);
+
         project.setStatus(request.getProjectStatus());
         projectRepository.save(project);
         Activity activity = new Activity();
@@ -160,6 +175,32 @@ public class ProjectServiceImpl implements ProjectService {
         activity.setDetails("Update Status Project to " + request.getProjectStatus());
         activityService.createActivity(activity);
         return mapToResponse(project);
+    }
+
+    private void assertCanManageProject(Project project) {
+        User currentUser = getCurrentUser();
+        if (currentUser.getRole() == UserRole.ADMIN) {
+            return;
+        }
+
+        boolean assigned = Optional.ofNullable(project.getUsers())
+                .orElseGet(Collections::emptyList)
+                .stream()
+                .anyMatch(user -> user.getId().equals(currentUser.getId()));
+        if (currentUser.getRole() != UserRole.PROJECT_MANAGER || !assigned) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not assigned to this project");
+        }
+    }
+
+    private User getCurrentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()
+                || "anonymousUser".equals(authentication.getName())) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication is required");
+        }
+
+        return userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
     }
 
 
@@ -180,8 +221,8 @@ public class ProjectServiceImpl implements ProjectService {
         response.setDescription(project.getDescription());
         response.setStatus(project.getStatus());
         response.setDeadline(project.getDeadline());
-        response.setCreatedAt(LocalDateTime.now());
-        response.setUpdatedAt(LocalDateTime.now());
+        response.setCreatedAt(project.getCreatedAt());
+        response.setUpdatedAt(project.getUpdatedAt() != null ? project.getUpdatedAt() : project.getCreatedAt());
 
         List<UserResponse> userResponses = Optional.ofNullable(project.getUsers())
                 .orElse(Collections.emptyList())

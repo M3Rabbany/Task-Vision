@@ -72,6 +72,7 @@ const NAV_ITEMS = {
   ADMIN: [
     { path: "dashboard", label: "Dashboard", iconName: "layout-dashboard" },
     { path: "projects", label: "Projects", iconName: "folder-kanban" },
+    { path: "tasks", label: "Task board", iconName: "check-square" },
     { path: "users", label: "Users", iconName: "users" },
     { path: "notifications", label: "Notifications", iconName: "bell", badge: true },
   ],

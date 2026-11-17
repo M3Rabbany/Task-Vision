@@ -11,6 +11,7 @@ import {
   toast,
 } from "../ui.js";
 
+const PAGE_SIZE = 20;
 const TYPE_LABELS = {
   INFO: "Informasi",
   WARNING: "Peringatan",
@@ -46,7 +47,30 @@ function notificationsHash(tab, type) {
   return `#/notifications${suffix ? `?${suffix}` : ""}`;
 }
 
+function pageContent(page) {
+  return Array.isArray(page?.content) ? page.content : [];
+}
+
+function pageTotal(page) {
+  const total = Number(page?.totalElements);
+  return Number.isFinite(total) ? total : pageContent(page).length;
+}
+
 export async function renderNotifications(container, session, params = {}) {
+  const activeTab = params.tab === "unread" ? "unread" : "all";
+  const typeFilter = ["INFO", "WARNING", "URGENT"].includes(params.type) ? params.type : "";
+  let searchTerm = "";
+  let requestVersion = 0;
+
+  const state = {
+    items: [],
+    page: 0,
+    totalPages: 0,
+    totalElements: 0,
+    hasMore: false,
+    stats: { all: 0, unread: 0, urgent: 0 },
+  };
+
   container.innerHTML = `
     ${pageHeader({
       eyebrow: "Inbox",
@@ -56,9 +80,48 @@ export async function renderNotifications(container, session, params = {}) {
     ${skeletonRows(5)}
   `;
 
-  let notifications = [];
+  function listQuery(page) {
+    const query = {
+      page,
+      size: PAGE_SIZE,
+      sort: "createdAt,desc",
+    };
+    if (activeTab === "unread") query.read = "false";
+    if (typeFilter) query.filterBy = typeFilter;
+    if (searchTerm) query.search = searchTerm;
+    return query;
+  }
+
+  async function loadPage(page, append = false) {
+    const version = ++requestVersion;
+    const response = await api.getFilteredNotifications(listQuery(page));
+    if (version !== requestVersion) return;
+
+    const data = unwrap(response) || {};
+    const content = pageContent(data);
+    state.items = append ? [...state.items, ...content] : content;
+    state.page = Number(data.number) || page;
+    state.totalPages = Number(data.totalPages) || 0;
+    state.totalElements = pageTotal(data);
+    state.hasMore = Boolean(data.hasNext) || state.page + 1 < state.totalPages;
+  }
+
+  async function loadStats() {
+    const [all, unread, urgent] = await Promise.all([
+      api.getFilteredNotifications({ page: 0, size: 1 }),
+      api.getFilteredNotifications({ page: 0, size: 1, read: "false" }),
+      api.getFilteredNotifications({ page: 0, size: 1, filterBy: "URGENT" }),
+    ]);
+
+    state.stats = {
+      all: pageTotal(unwrap(all)),
+      unread: pageTotal(unwrap(unread)),
+      urgent: pageTotal(unwrap(urgent)),
+    };
+  }
+
   try {
-    notifications = unwrap(await api.getNotifications(session.id)) || [];
+    await Promise.all([loadPage(0), loadStats()]);
   } catch (error) {
     container.innerHTML = `
       ${pageHeader({ eyebrow: "Inbox", title: "Notifications", description: "Pembaruan aktivitas dan task Anda." })}
@@ -74,15 +137,6 @@ export async function renderNotifications(container, session, params = {}) {
     return;
   }
 
-  notifications = [...notifications].sort(
-    (a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
-  );
-
-  const activeTab = params.tab === "unread" ? "unread" : "all";
-  const typeFilter = ["INFO", "WARNING", "URGENT"].includes(params.type) ? params.type : "";
-  const unread = notifications.filter((notification) => !isRead(notification));
-  const urgent = notifications.filter((notification) => notificationType(notification) === "URGENT");
-
   container.innerHTML = `
     ${pageHeader({
       eyebrow: "Inbox",
@@ -90,7 +144,7 @@ export async function renderNotifications(container, session, params = {}) {
       description: "Pembaruan task, approval, dan aktivitas project Anda.",
       actions: `
         <button class="btn btn-outline" type="button" data-refresh>${icon("refresh", 15)} Muat ulang</button>
-        <button class="btn btn-primary" type="button" data-read-all ${unread.length ? "" : "disabled"}>
+        <button class="btn btn-primary" type="button" data-read-all ${state.stats.unread ? "" : "disabled"}>
           ${icon("check-circle", 15)} Tandai semua dibaca
         </button>
       `,
@@ -102,7 +156,7 @@ export async function renderNotifications(container, session, params = {}) {
           <span class="stat-icon">${icon("bell", 18)}</span>
           <span class="stat-trend">${icon("activity", 12)} total</span>
         </div>
-        <div class="stat-value">${notifications.length}</div>
+        <div class="stat-value" id="notif-total">${state.stats.all}</div>
         <div class="stat-label">Semua notifikasi</div>
       </article>
       <article class="stat-card" style="--stat-soft:rgba(2,132,199,.1);--stat-color:#0284c7">
@@ -110,15 +164,15 @@ export async function renderNotifications(container, session, params = {}) {
           <span class="stat-icon">${icon("mail", 18)}</span>
           <span class="stat-trend">${icon("eye", 12)} belum dibaca</span>
         </div>
-        <div class="stat-value">${unread.length}</div>
+        <div class="stat-value" id="notif-unread">${state.stats.unread}</div>
         <div class="stat-label">Belum dibaca</div>
       </article>
       <article class="stat-card" style="--stat-soft:rgba(220,38,38,.1);--stat-color:#dc2626">
         <div class="stat-top">
           <span class="stat-icon">${icon("alert-triangle", 18)}</span>
-          <span class="stat-trend" style="${urgent.length ? "color:var(--danger)" : ""}">${icon("clock", 12)} prioritas</span>
+          <span class="stat-trend" style="${state.stats.urgent ? "color:var(--danger)" : ""}">${icon("clock", 12)} prioritas</span>
         </div>
-        <div class="stat-value">${urgent.length}</div>
+        <div class="stat-value" id="notif-urgent">${state.stats.urgent}</div>
         <div class="stat-label">Notifikasi urgent</div>
       </article>
     </div>
@@ -129,7 +183,7 @@ export async function renderNotifications(container, session, params = {}) {
           <h3>Kotak masuk</h3>
           <p>Notifikasi terbaru muncul paling atas.</p>
         </div>
-        <span class="text-muted" style="font-size:11.5px" id="notif-count">${notifications.length} notifikasi</span>
+        <span class="text-muted" style="font-size:11.5px" id="notif-count">${state.totalElements} notifikasi</span>
       </div>
       <div class="card-body">
         <div class="toolbar" style="margin-bottom:14px">
@@ -150,21 +204,12 @@ export async function renderNotifications(container, session, params = {}) {
           </div>
         </div>
 
-        <div id="notif-list" class="notification-list">
-          ${notifications.length
-            ? notifications.map(notificationItem).join("")
-            : `<div style="padding-top:2px">${emptyState({
-                iconName: "bell",
-                title: "Belum ada notifikasi",
-                description: "Pembaruan task, approval, dan aktivitas project akan muncul di sini.",
-              })}</div>`}
-        </div>
-        <div id="notif-empty" class="hidden">
-          ${emptyState({
-            iconName: "bell",
-            title: "Tidak ada notifikasi yang cocok",
-            description: "Coba ubah filter atau kata kunci pencarian.",
-          })}
+        <div id="notif-list" class="notification-list"></div>
+        <div id="notif-empty" class="hidden"></div>
+        <div style="display:flex;justify-content:center;margin-top:14px">
+          <button class="btn btn-outline btn-sm hidden" type="button" data-load-more>
+            ${icon("chevron-down", 13)} Muat lebih banyak
+          </button>
         </div>
       </div>
     </section>
@@ -176,49 +221,97 @@ export async function renderNotifications(container, session, params = {}) {
   const searchInput = container.querySelector("#notif-search");
   const typeSelect = container.querySelector("#notif-type-filter");
   const readAllButton = container.querySelector("[data-read-all]");
+  const loadMoreButton = container.querySelector("[data-load-more]");
 
-  function filterList() {
-    const term = (searchInput?.value || "").trim().toLowerCase();
-    const type = typeSelect?.value || "";
-    let visible = 0;
-
-    list.querySelectorAll("[data-notification]").forEach((item) => {
-      const matchesTab = activeTab === "all" || item.dataset.read === "false";
-      const matchesType = !type || item.dataset.type === type;
-      const matchesTerm = !term || (item.dataset.searchItem || "").toLowerCase().includes(term);
-      const show = matchesTab && matchesType && matchesTerm;
-      item.classList.toggle("hidden", !show);
-      if (show) visible += 1;
-    });
-
-    countLabel.textContent = `${visible} notifikasi`;
-    empty.classList.toggle("hidden", visible > 0 || (!term && !type && activeTab === "all"));
+  function paintStats() {
+    container.querySelector("#notif-total").textContent = String(state.stats.all);
+    container.querySelector("#notif-unread").textContent = String(state.stats.unread);
+    container.querySelector("#notif-urgent").textContent = String(state.stats.urgent);
+    if (readAllButton) readAllButton.disabled = state.stats.unread === 0;
   }
 
-  filterList();
-  searchInput?.addEventListener("input", filterList);
-  typeSelect?.addEventListener("change", () => {
-    window.location.hash = notificationsHash(activeTab, typeSelect.value);
+  function paintList() {
+    countLabel.textContent = `${state.totalElements} notifikasi`;
+    loadMoreButton.classList.toggle("hidden", !state.hasMore);
+
+    if (!state.items.length) {
+      list.innerHTML = "";
+      const filtered = Boolean(searchTerm || typeFilter || activeTab === "unread");
+      empty.classList.remove("hidden");
+      empty.innerHTML = emptyState({
+        iconName: "bell",
+        title: filtered ? "Tidak ada notifikasi yang cocok" : "Belum ada notifikasi",
+        description: filtered
+          ? "Coba ubah filter, tab, atau kata kunci pencarian."
+          : "Pembaruan task, approval, dan aktivitas project akan muncul di sini.",
+      });
+      return;
+    }
+
+    empty.classList.add("hidden");
+    list.innerHTML = state.items.map(notificationItem).join("");
+  }
+
+  paintList();
+
+  container.querySelector("[data-refresh]")?.addEventListener("click", () => {
+    renderNotifications(container, session, { tab: activeTab, type: typeFilter });
   });
 
-  container.querySelector("[data-refresh]")?.addEventListener("click", () => renderNotifications(container, session, { tab: activeTab, type: typeFilter }));
   container.querySelectorAll("[data-tab]").forEach((button) => {
     button.addEventListener("click", () => {
       window.location.hash = notificationsHash(button.dataset.tab, typeFilter);
     });
   });
 
+  typeSelect?.addEventListener("change", () => {
+    window.location.hash = notificationsHash(activeTab, typeSelect.value);
+  });
+
+  let searchTimer = null;
+  searchInput?.addEventListener("input", () => {
+    searchTerm = searchInput.value.trim();
+    window.clearTimeout(searchTimer);
+    searchTimer = window.setTimeout(async () => {
+      try {
+        await loadPage(0);
+        paintList();
+      } catch (error) {
+        toast(error.message || "Gagal mencari notifikasi.", "error");
+      }
+    }, 300);
+  });
+
+  loadMoreButton?.addEventListener("click", async () => {
+    if (!state.hasMore) return;
+
+    setButtonLoading(loadMoreButton, true, "Memuat...");
+    try {
+      await loadPage(state.page + 1, true);
+      paintList();
+    } catch (error) {
+      toast(error.message || "Gagal memuat notifikasi berikutnya.", "error");
+    } finally {
+      setButtonLoading(loadMoreButton, false);
+    }
+  });
+
+  async function refreshNotifications() {
+    await Promise.all([loadPage(0), loadStats()]);
+    paintStats();
+    paintList();
+  }
+
   list.addEventListener("click", async (event) => {
     const button = event.target.closest("[data-notification-read]");
     if (!button) return;
 
-    const id = button.dataset.notificationRead;
     setButtonLoading(button, true, "Menyimpan...");
     try {
-      await api.markNotificationRead(id);
+      await api.markNotificationRead(button.dataset.notificationRead);
       toast("Notifikasi ditandai sudah dibaca.", "success");
       window.dispatchEvent(new CustomEvent("taskvision:notifications-updated"));
-      await renderNotifications(container, session, { tab: activeTab, type: typeFilter });
+      await refreshNotifications();
     } catch (error) {
       toast(error.message || "Gagal menandai notifikasi.", "error");
       setButtonLoading(button, false);
@@ -226,20 +319,28 @@ export async function renderNotifications(container, session, params = {}) {
   });
 
   readAllButton?.addEventListener("click", async () => {
-    const ids = unread.map((notification) => notification.id);
-    if (!ids.length) return;
+    if (!state.stats.unread) return;
 
     setButtonLoading(readAllButton, true, "Memproses...");
-    const results = await Promise.allSettled(ids.map((id) => api.markNotificationRead(id)));
-    const failed = results.filter((result) => result.status === "rejected").length;
+    try {
+      const response = await api.getFilteredNotifications({ page: 0, size: 1000, read: "false" });
+      const unreadItems = pageContent(unwrap(response));
+      const ids = unreadItems.map((notification) => notification.id);
+      const results = await Promise.allSettled(ids.map((id) => api.markNotificationRead(id)));
+      const failed = results.filter((result) => result.status === "rejected").length;
 
-    if (failed) {
-      toast(`${ids.length - failed} notifikasi dibaca, ${failed} gagal diproses.`, "warning");
-    } else {
-      toast("Semua notifikasi ditandai sudah dibaca.", "success");
+      if (failed) {
+        toast(`${ids.length - failed} notifikasi dibaca, ${failed} gagal diproses.`, "warning");
+      } else {
+        toast("Semua notifikasi ditandai sudah dibaca.", "success");
+      }
+      window.dispatchEvent(new CustomEvent("taskvision:notifications-updated"));
+      await refreshNotifications();
+    } catch (error) {
+      toast(error.message || "Gagal menandai semua notifikasi.", "error");
+    } finally {
+      setButtonLoading(readAllButton, false);
     }
-    window.dispatchEvent(new CustomEvent("taskvision:notifications-updated"));
-    await renderNotifications(container, session, { tab: activeTab, type: typeFilter });
   });
 }
 

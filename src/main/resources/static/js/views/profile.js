@@ -20,6 +20,7 @@ const CAPABILITIES = {
   ADMIN: [
     { iconName: "users", title: "Kelola pengguna", text: "Buat, ubah, dan hapus akun serta role anggota workspace." },
     { iconName: "folder-kanban", title: "Kelola project", text: "Atur project, anggota tim, dan status pekerjaan." },
+    { iconName: "check-square", title: "Pantau task board", text: "Tinjau task dan progres project dalam mode baca saja." },
     { iconName: "layout-dashboard", title: "Pantau dashboard", text: "Lihat ringkasan project, deadline, dan KPI tim." },
   ],
   PROJECT_MANAGER: [

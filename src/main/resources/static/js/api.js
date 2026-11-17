@@ -277,6 +277,10 @@ export const api = {
     return request(`/api/v1/notifications/user/${encodeURIComponent(userId)}`);
   },
 
+  getFilteredNotifications(params = {}) {
+    return request(`/api/v1/notifications/filter${buildQuery(params)}`);
+  },
+
   markNotificationRead(id) {
     return request(`/api/v1/notifications/${encodeURIComponent(id)}/read`, { method: "PUT" });
   },

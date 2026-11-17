@@ -91,7 +91,7 @@ public class ReportServiceImpl implements ReportService {
 
         Row updatedRow = sheet.createRow(5);
         updatedRow.createCell(0).setCellValue("Updated At");
-        updatedRow.createCell(1).setCellValue(formatDateTime(project.getCreatedAt()));
+        updatedRow.createCell(1).setCellValue(formatDateTime(project.getUpdatedAt()));
 
         // Apply styles
         for (int i = 0; i <= 4; i++) {

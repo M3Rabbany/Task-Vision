@@ -7,6 +7,7 @@ import com.red.team.taskvisionapp.model.entity.Notification;
 import com.red.team.taskvisionapp.model.entity.User;
 import com.red.team.taskvisionapp.repository.UserRepository;
 import com.red.team.taskvisionapp.service.NotificationService;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -17,6 +18,8 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.*;
 
@@ -43,6 +46,11 @@ class NotificationControllerTest {
         user = new User();
         user.setId("user-id");
         user.setName("Test User");
+        user.setEmail("test@email.com");
+
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(user.getEmail(), null, Collections.emptyList()));
+        when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
 
         Notification notification = new Notification();
         notification.setId("notification-id");
@@ -55,6 +63,11 @@ class NotificationControllerTest {
         notificationResponse.setContent(notification.getContent());
         notificationResponse.setType(notification.getType().toString());
         notificationResponse.setRead(notification.isRead());
+    }
+
+    @AfterEach
+    public void tearDown() {
+        SecurityContextHolder.clearContext();
     }
 
     @Test
@@ -76,13 +89,16 @@ class NotificationControllerTest {
     public void testGetFilteredNotifications() {
         Pageable pageable = Pageable.ofSize(10);
         Page<NotificationResponse> notificationPage = new PageImpl<>(Collections.singletonList(notificationResponse));
-        when(notificationService.getFilteredNotifications("Test", TypeNotification.INFO, pageable)).thenReturn(notificationPage);
+        when(notificationService.getFilteredNotifications(user, "Test", TypeNotification.INFO, null, pageable))
+                .thenReturn(notificationPage);
 
-        ResponseEntity<CommonResponse<Page<NotificationResponse>>> response = notificationController.getFilteredNotifications("Test", TypeNotification.INFO, pageable);
+        ResponseEntity<CommonResponse<Page<NotificationResponse>>> response = notificationController
+                .getFilteredNotifications("Test", TypeNotification.INFO, null, pageable);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(1, Objects.requireNonNull(response.getBody()).getData().getSize());
         assertEquals(notificationResponse, response.getBody().getData().getContent().get(0));
-        verify(notificationService, times(1)).getFilteredNotifications("Test", TypeNotification.INFO, pageable);
+        verify(notificationService, times(1))
+                .getFilteredNotifications(user, "Test", TypeNotification.INFO, null, pageable);
     }
 }

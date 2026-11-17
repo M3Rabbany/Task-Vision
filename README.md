@@ -14,6 +14,7 @@ Aplikasi ini sudah dilengkapi frontend web yang disajikan langsung oleh Spring B
 - ✅ Approval task oleh Project Manager
 - 💬 Feedback task untuk anggota tim
 - 🔔 Notifikasi aktivitas dan badge notifikasi belum dibaca
+- 📧 Email selamat datang dengan template HTML responsif dan fallback teks
 - 📊 Dashboard project, deadline, dan KPI anggota
 - 🧾 Pratinjau laporan project dan export Excel
 - 👥 Manajemen akun, role, dan KPI (Admin)
@@ -59,11 +60,11 @@ Controller → Service → Repository → Entity
 
 | Role | Akses utama |
 |---|---|
-| **ADMIN** | Dashboard, projects, users, notifications, profil |
+| **ADMIN** | Dashboard, projects, users, task board (baca saja), notifications, profil |
 | **PROJECT_MANAGER** | Projects, task board, approval/feedback, reports, notifications, profil |
 | **MEMBER** | Task saya, projects, pengajuan approval, feedback, notifications, profil |
 
-> Admin tidak mengelola task board. Task dibuat dan di-approve oleh Project Manager.
+> Admin dapat meninjau task board sebagai oversight, tetapi pembuatan, perubahan, approval, dan feedback task tetap dilakukan oleh Project Manager.
 
 ---
 
@@ -127,11 +128,26 @@ Compose akan menjalankan MySQL di service `db` dan aplikasi di port `8080`.
 | `DB_PASSWORD` | Password database (wajib) | dari `.env` |
 | `JWT_SECRET` | Secret penandatangan JWT | dibuat sementara jika kosong |
 | `DDL_AUTO` | Strategi Hibernate schema | `update` |
-| `APP_FRONTEND_URL` | Base URL tautan reset password | `http://localhost:8080` |
+| `APP_FRONTEND_URL` | Base URL tautan reset password dan tautan login di email | `http://localhost:8080` |
+| `MAIL_HOST` / `MAIL_PORT` | Server SMTP | `smtp.gmail.com` / `587` |
 | `MAIL_USERNAME` / `MAIL_PASSWORD` | Kredensial SMTP; kosong berarti email nonaktif | kosong |
 | `DEFAULT_ADMIN_EMAIL` / `DEFAULT_ADMIN_PASSWORD` | Akun admin awal; kosong berarti tidak dibuat otomatis | kosong |
 
-> Jika email SMTP belum dikonfigurasi, fitur yang bergantung pada pengiriman email (misalnya tautan reset password) tidak akan mengirim pesan sungguhan.
+> Jika email SMTP belum dikonfigurasi, fitur yang bergantung pada pengiriman email (misalnya tautan reset password dan email selamat datang) tidak akan mengirim pesan sungguhan. Operasi utama seperti membuat user, project, dan task tetap berjalan.
+
+### Email tidak terkirim?
+
+1. Isi `MAIL_USERNAME` dan `MAIL_PASSWORD` di `.env`.
+2. Untuk Gmail, aktifkan verifikasi 2 langkah lalu buat **App Password** 16 karakter. Gunakan App Password tersebut sebagai `MAIL_PASSWORD`, bukan password akun Gmail.
+3. Pastikan `APP_FRONTEND_URL` mengarah ke alamat aplikasi yang bisa dibuka user.
+4. Terapkan ulang konfigurasi:
+   ```bash
+   docker compose up -d --build backend
+   ```
+5. Periksa status konfigurasi email di log:
+   ```bash
+   docker compose logs backend | grep -Ei 'email|mail|smtp'
+   ```
 
 ---
 

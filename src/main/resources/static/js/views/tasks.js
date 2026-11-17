@@ -53,7 +53,7 @@ function isMeaningfulFeedback(feedback) {
 
 export async function renderTasks(container, session, params = {}) {
   if (session.role === "ADMIN") {
-    renderAdminNotice(container);
+    await renderAdminTasks(container, session, params);
     return;
   }
 
@@ -65,25 +65,130 @@ export async function renderTasks(container, session, params = {}) {
   await renderMemberTasks(container, session, params);
 }
 
-function renderAdminNotice(container) {
+/* --------------------------------------------------------------------------
+   Admin read-only board
+   -------------------------------------------------------------------------- */
+
+async function renderAdminTasks(container, session, params = {}) {
   container.innerHTML = `
     ${pageHeader({
-      eyebrow: "Task board",
-      title: "Board task",
-      description: "Board task dikelola oleh project manager untuk setiap project.",
+      eyebrow: "Oversight",
+      title: "Task board",
+      description: "Tinjau task dan progres setiap project dalam mode baca saja.",
     })}
-    ${emptyState({
-      iconName: "user-check",
-      title: "Board ini milik project manager",
-      description: "Sebagai administrator, Anda dapat meninjau project, anggota tim, dan performa workspace. Perubahan task dilakukan oleh project manager.",
-      action: `
-        <div class="flex items-center gap-2" style="justify-content:center;flex-wrap:wrap">
-          <a class="btn btn-outline" href="#/projects">${icon("folder-kanban", 15)} Lihat project</a>
-          <a class="btn btn-primary" href="#/dashboard">${icon("layout-dashboard", 15)} Dashboard</a>
-        </div>
-      `,
-    })}
+    ${skeletonRows(5)}
   `;
+
+  let projects = [];
+  try {
+    projects = unwrap(await api.getProjects()) || [];
+  } catch (error) {
+    container.innerHTML = `
+      ${pageHeader({ eyebrow: "Oversight", title: "Task board", description: "Tinjau pekerjaan tim per project." })}
+      ${emptyState({
+        iconName: "alert-triangle",
+        title: "Gagal memuat project",
+        description: error.message || "Tidak dapat mengambil daftar project.",
+        action: '<button class="btn btn-primary" type="button" data-retry>Coba lagi</button>',
+      })}
+    `;
+    container.querySelector("[data-retry]")?.addEventListener("click", () => renderAdminTasks(container, session, params));
+    toast(error.message || "Gagal memuat project.", "error");
+    return;
+  }
+
+  if (!projects.length) {
+    container.innerHTML = `
+      ${pageHeader({ eyebrow: "Oversight", title: "Task board", description: "Tinjau pekerjaan tim per project." })}
+      ${emptyState({
+        iconName: "folder-kanban",
+        title: "Belum ada project",
+        description: "Buat project dan tugaskan project manager untuk mulai mengelola task.",
+        action: '<a class="btn btn-primary" href="#/projects">Buat project</a>',
+      })}
+    `;
+    return;
+  }
+
+  const selectedId = params.project && projects.some((project) => project.id === params.project)
+    ? params.project
+    : projects[0].id;
+  const project = projects.find((item) => item.id === selectedId);
+
+  container.innerHTML = `
+    ${pageHeader({
+      eyebrow: "Oversight",
+      title: "Task board",
+      description: "Tinjau task dan progres setiap project dalam mode baca saja.",
+      actions: `<button class="btn btn-outline" type="button" data-refresh>${icon("refresh", 15)} Muat ulang</button>`,
+    })}
+
+    <div class="toolbar">
+      <label class="text-muted" style="font-size:11.5px" for="task-project-select">Project</label>
+      <select class="select" id="task-project-select" style="min-width:230px" aria-label="Pilih project">
+        ${projects.map((item) => `
+          <option value="${escapeHtml(item.id)}" ${item.id === selectedId ? "selected" : ""}>
+            ${escapeHtml(projectName(item))}
+          </option>
+        `).join("")}
+      </select>
+      <span class="spacer"></span>
+      <div class="search-box">
+        ${icon("search", 15)}
+        <input type="search" id="task-search" placeholder="Cari task atau anggota..." aria-label="Cari task">
+      </div>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;margin-bottom:14px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2);color:var(--muted);font-size:11.5px">
+      ${icon("eye", 15)}
+      <span>Mode baca saja. Perubahan task dilakukan oleh project manager.</span>
+    </div>
+
+    <div class="board-meta">
+      <span>${statusBadge(project.status)}</span>
+      <span>${icon("calendar", 13)} ${formatDate(project.deadline)}</span>
+      <span>${icon("users", 13)} ${(project.assigned_to || []).length} anggota</span>
+      <span class="spacer"></span>
+      <span id="task-total">Memuat task...</span>
+    </div>
+
+    <div id="task-board-content">${skeletonRows(4)}</div>
+  `;
+
+  container.querySelector("[data-refresh]")?.addEventListener("click", () => {
+    renderAdminTasks(container, session, { project: selectedId });
+  });
+
+  const projectSelect = container.querySelector("#task-project-select");
+  projectSelect?.addEventListener("change", () => {
+    window.location.hash = `#/tasks?project=${encodeURIComponent(projectSelect.value)}`;
+  });
+
+  const board = container.querySelector("#task-board-content");
+  const totalLabel = container.querySelector("#task-total");
+
+  let tasks = [];
+  try {
+    tasks = unwrap(await api.getProjectTasks(project.id)) || [];
+  } catch (error) {
+    board.innerHTML = emptyState({
+      iconName: "alert-triangle",
+      title: "Gagal memuat task",
+      description: error.message || "Tidak dapat mengambil task pada project ini.",
+      action: '<button class="btn btn-outline" type="button" data-retry>Coba lagi</button>',
+    });
+    board.querySelector("[data-retry]")?.addEventListener("click", () => {
+      renderAdminTasks(container, session, { project: selectedId });
+    });
+    toast(error.message || "Gagal memuat task.", "error");
+    return;
+  }
+
+  totalLabel.textContent = `${tasks.length} task`;
+  board.innerHTML = renderKanban(project, tasks, { manageable: false, readOnly: true });
+
+  const searchInput = container.querySelector("#task-search");
+  searchInput?.addEventListener("input", () => filterBoard(board, searchInput.value));
 }
 
 /* --------------------------------------------------------------------------
@@ -228,7 +333,7 @@ async function renderManagerTasks(container, session, params = {}) {
   });
 }
 
-function renderKanban(project, tasks, { manageable = false } = {}) {
+function renderKanban(project, tasks, { manageable = false, readOnly = false } = {}) {
   return `
     <div class="kanban">
       ${STATUS_COLUMNS.map((column) => {
@@ -240,7 +345,7 @@ function renderKanban(project, tasks, { manageable = false } = {}) {
               <h3>${escapeHtml(column.label)}</h3>
               <span class="kanban-count">${items.length}</span>
             </div>
-            ${items.length ? items.map((task) => taskCard(project, task, { manageable })).join("") : `
+            ${items.length ? items.map((task) => taskCard(project, task, { manageable, readOnly })).join("") : `
               <div class="kanban-empty">${icon("layers", 18)}<br>Belum ada task</div>
             `}
           </section>
@@ -250,17 +355,43 @@ function renderKanban(project, tasks, { manageable = false } = {}) {
   `;
 }
 
-function taskCard(project, task, { manageable = false, feedback = null } = {}) {
+function taskCard(project, task, { manageable = false, readOnly = false, feedback = null } = {}) {
   const member = findMember(project, task);
   const deadline = deadlineState(task.deadline);
   const canChange = task.status !== "APPROVED";
   const searchText = `${taskName(task)} ${member.name} ${member.email || ""} ${task.status} ${projectName(project)}`;
+  const canRequestApproval = task.status === "ON_GOING" || task.status === "REJECTED";
+
+  let actions = "";
+  if (manageable) {
+    actions = `
+      ${task.status === "PENDING" ? `
+        <button class="btn btn-primary btn-sm" type="button" data-task-action="approve" data-id="${escapeHtml(task.id)}">
+          ${icon("check", 12)} Approve
+        </button>
+      ` : ""}
+      ${canChange ? `
+        <button class="btn btn-outline btn-sm" type="button" data-task-action="feedback" data-id="${escapeHtml(task.id)}">
+          ${icon("message-square", 12)} Feedback
+        </button>
+        <button class="btn btn-ghost btn-sm" type="button" data-task-action="assign" data-id="${escapeHtml(task.id)}">
+          ${icon("user-check", 12)} Assign
+        </button>
+      ` : ""}
+    `;
+  } else if (!readOnly && canRequestApproval) {
+    actions = `
+      <button class="btn btn-primary btn-sm" type="button" data-task-action="request-approval" data-id="${escapeHtml(task.id)}">
+        ${icon("send", 12)} Ajukan approval
+      </button>
+    `;
+  }
 
   return `
     <article class="task-card" data-task-card data-search-item="${escapeHtml(searchText)}">
       <div class="task-card-top">
         <h4>${escapeHtml(taskName(task))}</h4>
-        ${manageable ? `
+        ${manageable && canChange ? `
           <div class="flex items-center gap-1">
             <button class="task-menu-btn" type="button" data-task-action="edit" data-id="${escapeHtml(task.id)}" title="Edit task" aria-label="Edit task">
               ${icon("pencil", 13)}
@@ -289,29 +420,7 @@ function taskCard(project, task, { manageable = false, feedback = null } = {}) {
         </span>
       </div>
 
-      <div class="task-actions">
-        ${manageable ? `
-          ${task.status === "PENDING" ? `
-            <button class="btn btn-primary btn-sm" type="button" data-task-action="approve" data-id="${escapeHtml(task.id)}">
-              ${icon("check", 12)} Approve
-            </button>
-          ` : ""}
-          ${canChange ? `
-            <button class="btn btn-outline btn-sm" type="button" data-task-action="feedback" data-id="${escapeHtml(task.id)}">
-              ${icon("message-square", 12)} Feedback
-            </button>
-            <button class="btn btn-ghost btn-sm" type="button" data-task-action="assign" data-id="${escapeHtml(task.id)}">
-              ${icon("user-check", 12)} Assign
-            </button>
-          ` : ""}
-        ` : `
-          ${task.status === "ON_GOING" || task.status === "REJECTED" ? `
-            <button class="btn btn-primary btn-sm" type="button" data-task-action="request-approval" data-id="${escapeHtml(task.id)}">
-              ${icon("send", 12)} Ajukan approval
-            </button>
-          ` : ""}
-        `}
-      </div>
+      ${actions.trim() ? `<div class="task-actions">${actions}</div>` : ""}
     </article>
   `;
 }
@@ -376,7 +485,7 @@ function openTaskModal({ container, session, project, task = null }) {
         <div class="field">
           <label>Status saat ini</label>
           <input class="input" type="text" value="${escapeHtml(task ? humanizeStatus(task.status) : "On going")}" disabled>
-          <span class="hint">${editing ? "Menyimpan perubahan akan mengembalikan status task ke On going." : "Task baru otomatis berstatus On going."}</span>
+          <span class="hint">${editing ? "Menyimpan perubahan detail tidak mengubah status task." : "Task baru otomatis berstatus On going."}</span>
         </div>
         <div class="form-error span-2" id="task-form-error"></div>
       </form>
@@ -757,7 +866,7 @@ async function renderMemberTasks(container, session, params = {}) {
                   <div class="notif-meta" style="margin-top:12px">
                     ${icon("clock", 12)} ${formatRelative(item.createdAt || item.updatedAt)}
                   </div>
-                  ${task ? `
+                  ${task && (task.status === "ON_GOING" || task.status === "REJECTED") ? `
                     <div style="margin-top:12px">
                       <button class="btn btn-primary btn-sm" type="button" data-task-action="request-approval" data-id="${escapeHtml(task.id)}">
                         ${icon("send", 13)} Ajukan ulang approval

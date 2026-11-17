@@ -24,6 +24,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -42,6 +43,10 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     public List<TaskResponse> getTasksByProject(String projectId) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found"));
+        assertCanAccessProject(project);
+
         List<Task> tasks = taskRepository.findByProjectId(projectId);
         return tasks.stream().map(this::toTaskResponse).collect(Collectors.toList());
     }
@@ -52,28 +57,23 @@ public class TaskServiceImpl implements TaskService {
         validationService.validate(request);
 
         Project project = projectRepository.findById(request.getProjectId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ("Project not found")));
-
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found"));
         Task task = taskRepository.findById(request.getTaskId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ("Task not found")));
-
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Task not found"));
         User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ("User not found")));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
-        if (!task.getProject().getId().equals(project.getId())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Task does not belong to the specified project");
+        assertCanAccessProject(project);
+        assertTaskBelongsToProject(task, project);
+
+        if (task.getStatus() == TaskStatus.APPROVED) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Task already approved and cannot be reassigned");
         }
 
-        if (task.getStatus().equals(TaskStatus.APPROVED)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Task already approve and cannot be reassigned");
-        }
+        validateTaskAssignee(project, user);
 
-        if (!user.getRole().equals(UserRole.MEMBER)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Task can only be assigned to members");
-        }
-
-        task.setProject(project);
         task.setAssignedTo(user);
+        task.setUpdatedAt(LocalDateTime.now());
         taskRepository.save(task);
 
         Activity activity = new Activity();
@@ -83,50 +83,35 @@ public class TaskServiceImpl implements TaskService {
         activity.setDetails("Assign User to Task");
         activityService.createActivity(activity);
 
-        String emailSubject = "Task assigned to you";
-        String emailBody = "Hello " + user.getName() + ",\n\n" +
-                "Your task " + task.getTaskName() + " has been assigned to you.\n\n" +
-                "Please complete the task and submit before deadline.\n\n" +
-                "Best regards,\n" +
-                "TaskVisionApp";
-
-        emailService.sendEmail(user.getEmail(), emailSubject, emailBody);
-
-        Notification notification = Notification.builder()
-                .content("Task " + task.getTaskName() + " has been assigned to " + user.getName() + ".")
-                .type(TypeNotification.INFO)
-                .isRead(false)
-                .createdAt(LocalDateTime.now())
-                .build();
-
-        Notification savedNotification = notificationRepository.save(notification);
-
-        NotificationMember notificationMember = NotificationMember.builder()
-                .user(user)
-                .notification(savedNotification)
-                .build();
-
-        notificationMemberRepository.save(notificationMember);
+        notifyTaskAssigned(task, user);
     }
 
     @Override
+    @Transactional
     public void approveTask(TaskApproveRequest request) {
         validationService.validate(request);
 
         Project project = projectRepository.findById(request.getProjectId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ("Project not found")));
-
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found"));
         Task task = taskRepository.findById(request.getTaskId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ("Task not found")));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Task not found"));
+
+        assertCanAccessProject(project);
+        assertTaskBelongsToProject(task, project);
 
         if (task.getStatus() == TaskStatus.APPROVED) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot provide feedback to an approved task");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Task is already approved");
+        }
+        if (task.getStatus() != TaskStatus.PENDING) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Only tasks waiting for approval can be approved");
         }
 
         task.setStatus(TaskStatus.APPROVED);
-        task.setProject(project);
         task.setUpdatedAt(LocalDateTime.now());
         taskRepository.save(task);
+
         Activity activity = new Activity();
         activity.setProject(project);
         activity.setEntity("Task");
@@ -134,21 +119,10 @@ public class TaskServiceImpl implements TaskService {
         activity.setDetails("Approve Task");
         activityService.createActivity(activity);
 
-        Notification notification = Notification.builder()
-                .content("Task " + task.getTaskName() + " has been approved.")
-                .type(TypeNotification.INFO)
-                .isRead(false)
-                .createdAt(LocalDateTime.now())
-                .build();
-
-        Notification savedNotification = notificationRepository.save(notification);
-
-        NotificationMember notificationMember = NotificationMember.builder()
-                .user(task.getAssignedTo())
-                .notification(savedNotification)
-                .build();
-
-        notificationMemberRepository.save(notificationMember);
+        notifyUser(
+                task.getAssignedTo(),
+                "Task " + task.getTaskName() + " has been approved.",
+                TypeNotification.INFO);
     }
 
     @Override
@@ -156,15 +130,19 @@ public class TaskServiceImpl implements TaskService {
     public FeedbackResponse feedbackTask(TaskFeedbackRequest request) {
         validationService.validate(request);
 
+        Project project = projectRepository.findById(request.getProjectId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found"));
         Task task = taskRepository.findById(request.getTaskId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ("Task not found")));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Task not found"));
+
+        assertCanAccessProject(project);
+        assertTaskBelongsToProject(task, project);
 
         if (task.getStatus() == TaskStatus.APPROVED) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot provide feedback to an approved task");
         }
 
         User currentUser = getCurrentUser();
-
         Feedback feedback = Feedback.builder()
                 .task(task)
                 .createdBy(currentUser)
@@ -177,6 +155,7 @@ public class TaskServiceImpl implements TaskService {
         feedbackRepository.save(feedback);
 
         task.setStatus(TaskStatus.REJECTED);
+        task.setUpdatedAt(LocalDateTime.now());
         taskRepository.save(task);
 
         Activity activity = new Activity();
@@ -186,32 +165,25 @@ public class TaskServiceImpl implements TaskService {
         activity.setDetails("Reject task and give feedback");
         activityService.createActivity(activity);
 
-        Notification notification = Notification.builder()
-                .content("Task " + task.getTaskName() + " has been rejected.")
-                .type(TypeNotification.WARNING)
-                .isRead(false)
-                .createdAt(LocalDateTime.now())
-                .build();
-
-        Notification savedNotification = notificationRepository.save(notification);
-
-        NotificationMember notificationMember = NotificationMember.builder()
-                .user(task.getAssignedTo())
-                .notification(savedNotification)
-                .build();
-
-        notificationMemberRepository.save(notificationMember);
+        notifyUser(
+                task.getAssignedTo(),
+                "Task " + task.getTaskName() + " has been rejected.",
+                TypeNotification.WARNING);
 
         return toFeedbackResponse(feedback);
     }
 
-
     @Override
+    @Transactional
     public TaskResponse createTask(TaskRequest taskRequest) {
         Project project = projectRepository.findById(taskRequest.getProjectId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ("Project not found")));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found"));
         User user = userRepository.findById(taskRequest.getAssignedTo())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ("User not found")));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        assertCanAccessProject(project);
+        validateTaskAssignee(project, user);
+
         Task task = new Task();
         task.setProject(project);
         task.setAssignedTo(user);
@@ -222,6 +194,7 @@ public class TaskServiceImpl implements TaskService {
         task.setUpdatedAt(LocalDateTime.now());
 
         taskRepository.save(task);
+
         Activity activity = new Activity();
         activity.setProject(project);
         activity.setEntity("Task");
@@ -229,21 +202,33 @@ public class TaskServiceImpl implements TaskService {
         activity.setDetails("Task Created");
         activityService.createActivity(activity);
 
+        notifyTaskAssigned(task, user);
         return toTaskResponse(task);
     }
 
     @Override
+    @Transactional
     public TaskResponse updateTask(String taskId, TaskRequest taskRequest) {
-        Task task = taskRepository.findById(taskId).orElseThrow(() -> new OpenApiResourceNotFoundException("Task not found"));
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new OpenApiResourceNotFoundException("Task not found"));
         Project project = projectRepository.findById(taskRequest.getProjectId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ("Project not found")));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Project not found"));
         User user = userRepository.findById(taskRequest.getAssignedTo())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ("User not found")));
-        task.setProject(project);
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        assertCanAccessProject(project);
+        assertTaskBelongsToProject(task, project);
+
+        if (task.getStatus() == TaskStatus.APPROVED) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Approved tasks cannot be edited");
+        }
+
+        validateTaskAssignee(project, user);
+
+        String previousAssigneeId = task.getAssignedTo() != null ? task.getAssignedTo().getId() : null;
         task.setAssignedTo(user);
         task.setTaskName(taskRequest.getTaskName());
         task.setDeadline(taskRequest.getDeadline());
-        task.setStatus(TaskStatus.ON_GOING);
         task.setUpdatedAt(LocalDateTime.now());
 
         task = taskRepository.save(task);
@@ -252,15 +237,26 @@ public class TaskServiceImpl implements TaskService {
         activity.setProject(project);
         activity.setEntity("Task");
         activity.setAction("Update");
-        activity.setDetails("Update task description");
+        activity.setDetails("Update task details");
         activityService.createActivity(activity);
+
+        if (previousAssigneeId == null || !previousAssigneeId.equals(user.getId())) {
+            notifyTaskAssigned(task, user);
+        }
 
         return toTaskResponse(task);
     }
 
     @Override
+    @Transactional
     public void deleteTask(String taskId) {
-        Task task = taskRepository.findById(taskId).orElseThrow(() -> new OpenApiResourceNotFoundException("Task not found"));
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new OpenApiResourceNotFoundException("Task not found"));
+        assertCanAccessProject(task.getProject());
+
+        if (task.getStatus() == TaskStatus.APPROVED) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Approved tasks cannot be deleted");
+        }
 
         Activity activity = new Activity();
         activity.setProject(task.getProject());
@@ -272,11 +268,90 @@ public class TaskServiceImpl implements TaskService {
         taskRepository.delete(task);
     }
 
+    private void assertTaskBelongsToProject(Task task, Project project) {
+        if (task.getProject() == null || !task.getProject().getId().equals(project.getId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Task does not belong to the specified project");
+        }
+    }
+
+    private void validateTaskAssignee(Project project, User user) {
+        if (user.getRole() != UserRole.MEMBER) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Task can only be assigned to members");
+        }
+
+        boolean projectMember = Optional.ofNullable(project.getUsers())
+                .orElseGet(List::of)
+                .stream()
+                .anyMatch(member -> member.getId().equals(user.getId()));
+        if (!projectMember) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "User is not a member of this project");
+        }
+    }
+
+    private void assertCanAccessProject(Project project) {
+        User currentUser = getCurrentUser();
+        if (currentUser.getRole() == UserRole.ADMIN) {
+            return;
+        }
+
+        boolean allowed = Optional.ofNullable(project.getUsers())
+                .orElseGet(List::of)
+                .stream()
+                .anyMatch(member -> member.getId().equals(currentUser.getId()));
+        if (!allowed) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not assigned to this project");
+        }
+    }
+
     private User getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()
+                || "anonymousUser".equals(authentication.getName())) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication is required");
+        }
+
         String email = authentication.getName();
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
+    }
+
+    private void notifyTaskAssigned(Task task, User user) {
+        if (task == null || user == null) {
+            return;
+        }
+
+        emailService.sendEmail(
+                user.getEmail(),
+                "Task assigned to you",
+                "Hello " + user.getName() + ",\n\n"
+                        + "Your task " + task.getTaskName() + " has been assigned to you.\n\n"
+                        + "Please complete the task and submit before deadline.\n\n"
+                        + "Best regards,\n"
+                        + "TaskVisionApp");
+
+        notifyUser(
+                user,
+                "Task " + task.getTaskName() + " has been assigned to " + user.getName() + ".",
+                TypeNotification.INFO);
+    }
+
+    private void notifyUser(User user, String content, TypeNotification type) {
+        if (user == null) {
+            return;
+        }
+
+        Notification notification = Notification.builder()
+                .content(content)
+                .type(type)
+                .isRead(false)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        Notification savedNotification = notificationRepository.save(notification);
+        notificationMemberRepository.save(NotificationMember.builder()
+                .user(user)
+                .notification(savedNotification)
+                .build());
     }
 
     private TaskResponse toTaskResponse(Task task) {
@@ -315,6 +390,5 @@ public class TaskServiceImpl implements TaskService {
                 .createdAt(feedback.getCreatedAt())
                 .updatedAt(feedback.getUpdatedAt())
                 .build();
-
     }
 }

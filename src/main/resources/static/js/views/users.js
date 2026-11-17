@@ -267,7 +267,7 @@ function openUserModal({ container, session, user = null }) {
   const modal = openModal({
     title: editing ? "Edit user" : "User baru",
     subtitle: editing
-      ? "Perbarui data akun. Password tidak diubah dari halaman ini."
+      ? "Perbarui data akun. Isi password baru hanya jika ingin menggantinya."
       : "Buat akun baru dan tentukan role-nya di workspace.",
     size: "modal-lg",
     content: `
@@ -282,13 +282,13 @@ function openUserModal({ container, session, user = null }) {
           <input class="input" id="user-email" name="email" type="email" maxlength="160"
             placeholder="nama@perusahaan.com" value="${escapeHtml(user?.email || "")}" required>
         </div>
-        ${editing ? "" : `
-          <div class="field">
-            <label for="user-password">Password awal</label>
-            <input class="input" id="user-password" name="password" type="password" minlength="6"
-              placeholder="Minimal 6 karakter" autocomplete="new-password" required>
-          </div>
-        `}
+        <div class="field">
+          <label for="user-password">${editing ? "Password baru" : "Password awal"}</label>
+          <input class="input" id="user-password" name="password" type="password" minlength="6"
+            placeholder="${editing ? "Kosongkan jika tidak diubah" : "Minimal 6 karakter"}"
+            autocomplete="new-password" ${editing ? "" : "required"}>
+          <span class="hint">${editing ? "Opsional. Minimal 6 karakter jika diisi." : "Minimal 6 karakter."}</span>
+        </div>
         <div class="field">
           <label for="user-role">Role</label>
           <select class="select" id="user-role" name="role" required>
@@ -345,6 +345,11 @@ function openUserModal({ container, session, user = null }) {
       errorBox.classList.add("show");
       return;
     }
+    if (editing && values.password && values.password.length < 6) {
+      errorBox.textContent = "Password baru minimal 6 karakter atau biarkan kosong.";
+      errorBox.classList.add("show");
+      return;
+    }
     if (!values.contact) {
       errorBox.textContent = "Kontak wajib diisi.";
       errorBox.classList.add("show");
@@ -369,6 +374,7 @@ function openUserModal({ container, session, user = null }) {
       contact: values.contact,
       kpi,
     };
+    if (values.password) payload.password = values.password;
 
     setButtonLoading(submitButton, true, editing ? "Menyimpan..." : "Membuat...");
     try {
