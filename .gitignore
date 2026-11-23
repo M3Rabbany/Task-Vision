@@ -15,6 +15,9 @@ target/
 *.bak
 *.old
 
+### Generated local CA certificate (Caddy) ###
+caddy-local-root.crt
+
 ### STS ###
 .apt_generated
 .classpath

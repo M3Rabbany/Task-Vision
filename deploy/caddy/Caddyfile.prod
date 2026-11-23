@@ -1,0 +1,31 @@
+# HTTPS produksi dengan sertifikat publik yang diterbitkan otomatis lewat ACME
+# (Let's Encrypt / ZeroSSL) oleh Caddy.
+#
+# Sebelum memakai profil ini:
+#   1. A/AAAA record DOMAIN harus mengarah ke IP publik server ini (bukan host lain).
+#   2. Port 80 dan 443 harus terbuka dari internet.
+#   3. Isi DOMAIN dan APP_FRONTEND_URL di file .env.
+#   4. Set CADDYFILE=Caddyfile.prod lalu recreat container caddy.
+#
+# Caddy otomatis mengalihkan http://(port 80) ke https://(port 443).
+
+{$DOMAIN} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+		-Server
+	}
+
+	# Paksa issuer publik (ACME). Jangan pakai `tls internal`: itu self-signed
+	# dan tetap akan memunculkan peringatan di browser.
+	tls {
+		issuer acme
+	}
+
+	reverse_proxy backend:8080
+}

@@ -2,13 +2,14 @@
 
 **Task Vision** adalah aplikasi **Project Management Hub** berbasis Java/Spring Boot untuk membantu tim mengelola project, task, approval, feedback, notifikasi, KPI, dan laporan Excel dalam satu workspace.
 
-Aplikasi ini sudah dilengkapi frontend web yang disajikan langsung oleh Spring Boot, sehingga tidak memerlukan Node.js, React, Vite, atau proses build frontend terpisah.
+Aplikasi ini sudah dilengkapi frontend web yang disajikan langsung oleh Spring Boot, sehingga tidak memerlukan Node.js, React, Vite, atau proses build frontend terpisah. Akses web dilindungi HTTPS melalui reverse proxy **Caddy** (redirect HTTP → HTTPS, HSTS di mode produksi, dan header keamanan), sehingga kredensial tidak dikirim dalam bentuk plaintext.
 
 ---
 
 ## ✨ Fitur Utama
 
 - 🔑 Autentikasi JWT (login, lupa password, reset password)
+- 🔒 Akses HTTPS lewat Caddy: redirect HTTP → HTTPS, HSTS (produksi), dan header keamanan
 - 📁 Manajemen project dan anggota tim
 - 📌 Task board dengan alur **On going → Pending → Approved / Rejected**
 - ✅ Approval task oleh Project Manager
@@ -42,14 +43,18 @@ Frontend berada di `src/main/resources/static` dan memakai CSS/JavaScript murni 
 
 ```text
 Browser (HTML/CSS/ES Modules)
-        │  fetch + Bearer JWT
+        │  HTTPS (TLS) — port 443, HTTP :80 dialihkan ke HTTPS
         ▼
-Controller → Service → Repository → Entity
-                 │
-                 └── JWT Security + validasi
+Caddy (sertifikat + redirect + header keamanan)
+        │  HTTP internal di jaringan Docker — port 8080 (tidak diekspos publik)
+        ▼
+Spring Boot: Controller → Service → Repository → Entity
+                              │
+                              └── JWT Security + validasi
 ```
 
 - Halaman aplikasi dilayani oleh `PageController`.
+- Backend hanya mendengarkan port `8080` di dalam jaringan Docker; satu-satunya pintu masuk publik adalah Caddy.
 - Aset frontend dilayani dari `src/main/resources/static`.
 - Otorisasi API tetap dilakukan di server melalui `SecurityConfig`.
 - Frontend hanya menyembunyikan menu/aksi sesuai role; keputusan keamanan tetap di backend.
@@ -91,13 +96,15 @@ Controller → Service → Repository → Entity
    ```bash
    ./mvnw -DskipTests package
    ```
-3. Jalankan aplikasi dan database:
+3. Jalankan aplikasi, database, dan reverse proxy HTTPS:
    ```bash
    docker compose up --build
    ```
-4. Buka [http://localhost:8080](http://localhost:8080).
+4. Buka [https://localhost](https://localhost) (atau `https://<IP-server>`). Karena mode default memakai sertifikat internal Caddy, browser akan menampilkan peringatan sertifikat pada kunjungan pertama — lihat bagian [HTTPS dan Perlindungan Kredensial](#-https-dan-perlindungan-kredensial).
 
-Compose akan menjalankan MySQL di service `db` dan aplikasi di port `8080`.
+> Pastikan port **80** dan **443** di host tidak dipakai layanan lain. Compose akan menolak start jika port tersebut sudah terpakai.
+
+Compose menjalankan tiga service: MySQL (`db`, hanya di jaringan internal), aplikasi Spring Boot (`backend`, hanya di jaringan internal), dan Caddy (`caddy`, satu-satunya yang terbuka di port 80/443). Akses langsung ke `http://localhost:8080` tidak lagi tersedia — ini disengaja agar tidak ada jalur plaintext untuk kredensial.
 
 ### Opsi 2 — Jalankan lokal dengan MySQL
 
@@ -118,17 +125,22 @@ Compose akan menjalankan MySQL di service `db` dan aplikasi di port `8080`.
    ```
 4. Buka [http://localhost:8080](http://localhost:8080).
 
+> Mode `spring-boot:run` ini berjalan tanpa Caddy, jadi koneksinya masih HTTP biasa dan hanya cocok untuk debugging lokal. Untuk akses yang dilindungi HTTPS, pakai Opsi 1 (Docker Compose) atau letakkan aplikasi di balik reverse proxy HTTPS.
+
 ### Konfigurasi opsional
 
 | Environment Variable | Deskripsi | Default |
 |---|---|---|
-| `SERVER_PORT` | Port aplikasi | `8080` |
+| `SERVER_PORT` | Port aplikasi di dalam kontainer (tidak diekspos publik saat memakai Compose) | `8080` |
 | `DB_URL` | URL JDBC MySQL | `jdbc:mysql://db:3306/mydb` |
 | `DB_USER` | Username database | `root` |
 | `DB_PASSWORD` | Password database (wajib) | dari `.env` |
 | `JWT_SECRET` | Secret penandatangan JWT | dibuat sementara jika kosong |
 | `DDL_AUTO` | Strategi Hibernate schema | `update` |
-| `APP_FRONTEND_URL` | Base URL tautan reset password dan tautan login di email | `http://localhost:8080` |
+| `CADDYFILE` | Profil HTTPS Caddy: `Caddyfile.local` (self-signed) atau `Caddyfile.prod` (Let's Encrypt) | `Caddyfile.local` |
+| `LOCAL_HOSTS` | Hostname/IP yang mendapat sertifikat lokal; tambahkan IP jaringan jika diakses dari perangkat lain | `localhost` |
+| `DOMAIN` | Domain publik untuk Caddy; wajib jika `CADDYFILE=Caddyfile.prod` | kosong |
+| `APP_FRONTEND_URL` | Base URL tautan reset password dan tautan login di email (harus `https://...`) | `https://localhost` |
 | `MAIL_HOST` / `MAIL_PORT` | Server SMTP | `smtp.gmail.com` / `587` |
 | `MAIL_USERNAME` / `MAIL_PASSWORD` | Kredensial SMTP; kosong berarti email nonaktif | kosong |
 | `DEFAULT_ADMIN_EMAIL` / `DEFAULT_ADMIN_PASSWORD` | Akun admin awal; kosong berarti tidak dibuat otomatis | kosong |
@@ -151,7 +163,67 @@ Compose akan menjalankan MySQL di service `db` dan aplikasi di port `8080`.
 
 ---
 
+## 🔐 HTTPS dan Perlindungan Kredensial
+
+Semua akses ke Task Vision melalui Compose melewati Caddy di port `443`. Backend tidak diekspos langsung, dan permintaan ke `http://...` pada port `80` otomatis dialihkan (308) ke HTTPS.
+
+### Mode lokal (default, belum punya domain)
+
+`.env` memakai `CADDYFILE=Caddyfile.local`. Caddy membuat sertifikat dari **Caddy Local Authority**, sehingga lalu lintas tetap terenkripsi, tetapi browser belum mengenali penerbitnya. Mode ini cocok untuk development/testing. Secara default yang tercakup hanya `localhost`; jika perangkat lain mengakses lewat IP jaringan, set misalnya `LOCAL_HOSTS=localhost, 192.168.1.10` di `.env`, lalu jalankan `docker compose up -d --force-recreate caddy`.
+
+Akses dari laptop/klien:
+
+- Pakai `https://taskvision.thelabproject.com` **hanya jika** klien memakai DNS yang mengenal nama itu (mis. DNS Active Directory). Cek dengan `nslookup taskvision.thelabproject.com 192.168.14.24`; hasilnya harus mengarah ke IP server.
+- Alternatif paling aman untuk testing: buka langsung `https://<IP-server>/login` (mis. `https://192.168.13.47/login`). `LOCAL_HOSTS` sudah memasukkan IP tersebut dan Caddy memakai `default_sni` agar handshake TLS berhasil untuk IP literal.
+- Jangan buka `https://localhost` dari laptop: `localhost` berarti laptop itu sendiri, bukan server.
+
+Mempercayai sertifikat lokal (opsional, agar peringatan browser hilang):
+
+1. Buka `https://localhost` satu kali agar Caddy membuat root CA.
+2. Salin root CA ke host:
+   ```bash
+   docker compose exec -T caddy cat /data/caddy/pki/authorities/local/root.crt > caddy-local-root.crt
+   ```
+3. Import `caddy-local-root.crt` ke trust store sistem/browser (Linux: `update-ca-certificates`, macOS: Keychain Access, Windows: Certificate Manager), lalu muat ulang browser.
+
+> **Penting:** mode self-signed saja **tidak** membuktikan identitas server. Jika user mengabaikan peringatan browser, koneksi masih bisa disadap (MITM). Untuk user sungguhan, gunakan mode produksi dengan sertifikat publik.
+
+### Mode produksi (domain publik)
+
+1. Siapkan domain (mis. `taskvision.example.com`) dan arahkan record A/AAAA **publik** ke IP publik server tempat Caddy berjalan. Jika record masih mengarah ke host/load balancer lain, validasi ACME gagal dan sertifikat tidak akan terbit. Cek dari luar jaringan internal dengan `dig +short taskvision.example.com`.
+2. Buka port `80` dan `443` di firewall/security group.
+3. Isi `.env`:
+   ```env
+   CADDYFILE=Caddyfile.prod
+   DOMAIN=taskvision.example.com
+   APP_FRONTEND_URL=https://taskvision.example.com
+   ```
+
+   > Nama profil **case-sensitive** di Linux: `Caddyfile.prod` (huruf `f` kecil). Jika ditulis `CaddyFile.prod`, Docker membuat direktori kosong dengan nama tersebut dan mount gagal.
+
+4. Terapkan konfigurasi:
+   ```bash
+   docker compose up -d --force-recreate caddy backend
+   ```
+5. Cek sertifikat dan redirect:
+   ```bash
+   curl -I https://taskvision.example.com
+   curl -I http://taskvision.example.com   # harus 308 Location: https://...
+   ```
+
+Caddy otomatis mengambil dan memperbarui sertifikat Let's Encrypt/ZeroSSL, mengaktifkan HSTS (`max-age=31536000; includeSubDomains`), serta mengirim header `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, dan Content-Security-Policy. HSTS sengaja tidak dinyalakan di mode lokal supaya browser tidak mengunci akses ke HTTPS saat masih bereksperimen.
+
+### Catatan keamanan
+
+- HTTPS melindungi kredensial **saat dikirim di jaringan**. Token JWT tetap disimpan di `localStorage` browser, sehingga XSS masih menjadi risiko; jangan menyisipkan script/event handler yang tidak dipercaya ke halaman aplikasi.
+- Jangan pakai `http://` untuk `APP_FRONTEND_URL` di produksi, karena tautan reset password akan mengarah ke koneksi plaintext.
+- Simpan `.env`, private key, dan secret hanya di server; jangan commit ke Git.
+
+---
+
 ## 🌐 URL Frontend
+
+Semua path di bawah diakses dengan prefiks HTTPS, misalnya `https://localhost/` (lokal) atau `https://taskvision.example.com/` (produksi).
 
 | URL | Halaman |
 |---|---|
@@ -266,6 +338,8 @@ Untuk sekadar memastikan build berhasil tanpa menjalankan test:
 - Jangan commit file `.env` atau nilai credential apa pun ke repository.
 - Simpan `JWT_SECRET` dan password database hanya di environment server.
 - Credential yang pernah masuk ke riwayat Git harus dianggap bocor dan sebaiknya segera dirotasi.
+- Akses produksi wajib lewat HTTPS dengan sertifikat yang dipercaya publik (mode `Caddyfile.prod`); jangan mengandalkan sertifikat self-signed untuk user sungguhan.
+- Backend sengaja tidak mengekspos port `8080` ke publik. Jangan menambahkan kembali mapping `8080:8080` pada `compose.yaml` karena akan membypass enkripsi HTTPS.
 
 ---
 

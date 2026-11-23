@@ -1,0 +1,32 @@
+# HTTPS untuk lingkungan lokal / jaringan internal yang belum punya domain publik.
+# Sertifikat diterbitkan oleh Caddy Local Authority (self-signed). Lalu lintas tetap
+# terenkripsi, tetapi browser akan menampilkan peringatan sampai root CA-nya
+# dipercaya — lihat README bagian "Mempercayai sertifikat lokal".
+#
+# Secara default hanya `localhost` yang dilayani. Jika diakses lewat IP jaringan,
+# tambahkan IP tersebut lewat environment LOCAL_HOSTS, misalnya:
+# LOCAL_HOSTS=localhost, 192.168.1.10
+# Caddy otomatis mengalihkan HTTP port 80 ke HTTPS port 443 untuk nama di atas.
+{
+	# Browser tidak mengirim SNI saat alamat ditulis sebagai IP literal.
+	# Tanpa ini, https://192.168.13.47 gagal di handshake TLS.
+	# Ubah nilai ini jika IP server berubah.
+	default_sni 192.168.13.47
+}
+{$LOCAL_HOSTS:localhost} {
+	encode zstd gzip
+
+	header {
+		# HSTS sengaja tidak dipakai di mode lokal agar browser tidak mengunci
+		# akses ke HTTPS saat masih bereksperimen dengan port/host.
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+		-Server
+	}
+
+	tls internal
+
+	reverse_proxy backend:8080
+}

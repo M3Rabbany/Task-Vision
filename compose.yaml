@@ -2,8 +2,10 @@ services:
   backend:
     build: .
     image: taskvision-app:latest
-    ports:
-      - "8080:8080"
+    # Port aplikasi hanya bisa dijangkau dari dalam jaringan Docker.
+    # Semua akses publik wajib melewati Caddy lewat HTTPS di port 443.
+    expose:
+      - "8080"
     environment:
       - DB_HOST=db
       - DB_PORT=3306
@@ -19,7 +21,7 @@ services:
       - MAIL_PORT=${MAIL_PORT:-587}
       - MAIL_USERNAME=${MAIL_USERNAME:-}
       - MAIL_PASSWORD=${MAIL_PASSWORD:-}
-      - APP_FRONTEND_URL=${APP_FRONTEND_URL:-http://localhost:8080}
+      - APP_FRONTEND_URL=${APP_FRONTEND_URL:-https://localhost}
       - DEFAULT_ADMIN_EMAIL=${DEFAULT_ADMIN_EMAIL:-}
       - DEFAULT_ADMIN_PASSWORD=${DEFAULT_ADMIN_PASSWORD:-}
     networks:
@@ -28,6 +30,26 @@ services:
       db:
         condition: service_healthy
     restart: unless-stopped
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      - DOMAIN=${DOMAIN:-}
+      - LOCAL_HOSTS=${LOCAL_HOSTS:-localhost}
+    volumes:
+      # Default: Caddyfile.local (sertifikat internal). Untuk domain publik,
+      # set CADDYFILE=Caddyfile.prod di .env.
+      - ./deploy/caddy/${CADDYFILE:-Caddyfile.local}:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - task-vision-network
+    depends_on:
+      - backend
   db:
     image: mysql:8.0
     restart: always
@@ -48,6 +70,8 @@ services:
       retries: 10
 volumes:
   db-data:
+  caddy_data:
+  caddy_config:
 networks:
   task-vision-network:
     driver: bridge
